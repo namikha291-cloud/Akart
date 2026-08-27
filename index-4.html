@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AKART App — Local Delivery | Tengakhat</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0D3B14">
+<meta name="description" content="AKART Tengakhat — order groceries, fast food, vegetables, chicken, fish, sweets, stationery and more through WhatsApp.">
+<style>
+:root{--gd:#0D3B14;--g:#1B8A3E;--gold:#F5A623;--cream:#FBF8F2;--text:#222;--muted:#777;--border:#ece7d9;--white:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--cream);color:var(--text);line-height:1.5;padding-bottom:105px}
+button,input,textarea{font:inherit}
+header{position:sticky;top:0;z-index:50;background:var(--cream);border-bottom:3px solid var(--gd);padding:12px 16px}
+.header-inner{max-width:980px;margin:auto}
+.brand-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.logo{font-size:31px;font-weight:900;letter-spacing:-1.5px}.logo .a{color:var(--g)}.logo .kart{color:var(--gd)}
+.badge{font-size:10px;font-weight:800;color:var(--gd);background:var(--gold);padding:6px 9px;border-radius:99px;white-space:nowrap}.admin-open{border:1px solid var(--gd);background:#fff;color:var(--gd);padding:6px 8px;border-radius:8px;font-size:10px;font-weight:900}
+.cats{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.cats::-webkit-scrollbar{display:none}
+.cat-btn{flex-shrink:0;border:1.5px solid var(--gd);background:transparent;color:var(--gd);padding:7px 13px;border-radius:99px;font-weight:800;font-size:12px}
+.cat-btn.active{background:var(--gd);color:var(--cream)}
+.hero{max-width:980px;margin:18px auto 0;padding:0 16px}
+.hero-card{background:linear-gradient(135deg,var(--gd),var(--g));border-radius:20px;padding:24px;color:var(--cream);box-shadow:0 8px 25px #0d3b1422}
+.hero-eyebrow{font-size:11px;font-weight:900;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase}
+.hero-title{font-size:25px;font-weight:900;margin-top:5px;line-height:1.2}
+.hero-sub{font-size:13px;opacity:.9;margin-top:8px}
+.hero-actions{display:flex;gap:8px;margin-top:15px;flex-wrap:wrap}
+.hero-actions a{background:var(--gold);color:var(--gd);text-decoration:none;padding:9px 13px;border-radius:9px;font-weight:900;font-size:12px}
+main{max-width:980px;margin:auto;padding:18px 16px}
+.section-title{font-size:19px;font-weight:900;color:var(--gd);margin:2px 0 3px}
+.section-sub{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px;margin-top:14px}
+.item-card{background:var(--white);border-radius:15px;padding:14px;border:1px solid var(--border);display:flex;flex-direction:column;gap:7px;box-shadow:0 2px 8px #00000006}
+.item-photo{width:100%;height:145px;object-fit:cover;border-radius:11px;background:#f3eee2;display:block}.item-emoji{display:none}.item-name{font-weight:900;font-size:15px;color:var(--gd)}
+.item-desc{font-size:12px;color:var(--muted);min-height:34px}
+.item-footer{display:flex;align-items:center;justify-content:space-between;margin-top:3px}
+.item-price{font-weight:900;color:var(--gd);font-size:16px}
+.order-btn,.cart-btn{border:0;background:var(--gold);color:var(--gd);border-radius:8px;padding:8px 12px;font-weight:900;font-size:12px;cursor:pointer}
+.cart-bar{position:fixed;bottom:17px;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:620px;z-index:80}
+.cart-bar button{width:100%;background:var(--gd);color:var(--cream);border:0;border-radius:15px;padding:14px 18px;font-weight:900;font-size:15px;box-shadow:0 8px 28px #0d3b1455}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:100;padding:18px;overflow:auto}
+.modal.show{display:flex;align-items:flex-end;justify-content:center}
+.panel{background:var(--cream);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:20px;padding:19px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.panel h2{color:var(--gd);font-size:21px}.close{background:none;border:0;font-size:27px;color:var(--gd)}
+.cart-item{display:flex;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--border);padding:10px;border-radius:10px;margin-bottom:7px}
+.qty{display:flex;align-items:center;gap:7px}.qty button{border:1px solid var(--gd);background:transparent;color:var(--gd);border-radius:6px;width:27px;height:27px;font-weight:900}
+.total{display:flex;justify-content:space-between;font-weight:900;color:var(--gd);font-size:18px;padding:12px 0;border-top:1px solid var(--border);margin-top:10px}
+.form{display:grid;gap:9px;margin-top:8px}.form input,.form textarea{width:100%;border:1px solid #d9d2c3;border-radius:9px;padding:10px;background:#fff;outline:none}.form textarea{min-height:72px;resize:vertical}
+.primary{width:100%;border:0;background:var(--g);color:#fff;border-radius:10px;padding:12px;font-weight:900;margin-top:7px}
+.delivery-info{background:#fff5d9;border:1px solid #f1d58d;border-radius:10px;padding:10px;font-size:12px;color:var(--gd);margin-top:9px}
+footer{max-width:980px;margin:15px auto 0;padding:0 16px;text-align:center;color:var(--muted);font-size:12px}
+.contact{display:flex;justify-content:center;gap:15px;flex-wrap:wrap;margin-bottom:9px;font-size:13px;font-weight:900}.contact a{color:var(--gd);text-decoration:none}
+.empty{text-align:center;padding:30px;color:var(--muted)}
+@media(max-width:420px){.logo{font-size:27px}.hero-title{font-size:21px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.item-card{padding:11px}.item-desc{font-size:11px}.item-name{font-size:13px}.item-price{font-size:14px}}
+</style>
+</head>
+<body>
+
+<header>
+<div class="header-inner">
+  <div class="brand-row">
+    <div class="logo"><span class="a">A</span><span class="kart">KART</span></div>
+    <div style="display:flex;align-items:center;gap:7px"><button class="admin-open" onclick="openAdmin()">⚙ Admin</button><div class="badge">● 9 AM – 9 PM · Tengakhat</div></div>
+  </div>
+  <div class="cats" id="catBar"></div>
+</div>
+</header>
+
+<section class="hero">
+<div class="hero-card">
+  <div class="hero-eyebrow">Tengakhat Local Delivery</div>
+  <div class="hero-title">Everything you need.<br>Delivered to your door.</div>
+  <div class="hero-sub">Groceries • Fast Food • Vegetables • Chicken • Fish • Sweets • Stationery & more.</div>
+  <div class="hero-actions">
+    <a href="tel:+918136007815">📞 Call AKART</a>
+    <a href="https://wa.me/918136007815" target="_blank">💬 WhatsApp</a>
+  </div>
+</div>
+</section>
+
+<main>
+  <div class="section-title">AKART Shop</div>
+  <div class="section-sub">Real product photos • Select items, add to cart, and send your order on WhatsApp.</div>
+  <div class="grid" id="menuGrid"></div>
+</main>
+
+<footer>
+  <div class="contact">
+    <a href="tel:+918136007815">📞 8136007815</a>
+    <a href="https://wa.me/918136007815" target="_blank">💬 WhatsApp Order</a>
+  </div>
+  <div>Delivery: up to 2 km ₹20 · 2–5 km ₹30</div>
+  <div>AKART — Local. Fast. Reliable. · Tengakhat & nearby areas</div>
+</footer>
+
+<div class="cart-bar">
+  <button onclick="openCart()">🛒 View Cart <span id="cartCount">(0)</span> · ₹<span id="cartTotal">0</span></button>
+</div>
+
+<div class="modal" id="adminModal" onclick="if(event.target===this)closeAdmin()">
+<div class="panel">
+  <div class="panel-head"><h2>AKART Admin</h2><button class="close" onclick="closeAdmin()">×</button></div>
+  <div id="adminLogin">
+    <div class="delivery-info">Admin tools are stored on this phone/browser. Use them to add products and correct prices.</div>
+    <div class="form"><input id="adminPassword" type="password" placeholder="Admin password"><button class="primary" onclick="adminLogin()">Login</button></div>
+  </div>
+  <div id="adminPanel" style="display:none">
+    <div class="form">
+      <input id="editId" type="hidden">
+      <input id="editName" placeholder="Item name">
+      <input id="editPrice" type="number" min="0" step="0.01" placeholder="Price ₹">
+      <input id="editUnit" placeholder="Unit e.g. per kg / per piece">
+      <input id="editCat" placeholder="Category e.g. Grocery">
+      <input id="editImage" placeholder="Real photo URL (https://...)">
+      <textarea id="editDesc" placeholder="Short item description"></textarea>
+      <button class="primary" onclick="saveItem()">💾 Save / Correct Item</button>
+      <button class="primary" onclick="newItem()" style="background:var(--gd)">➕ Add New Item</button>
+    </div>
+    <div style="margin-top:15px;font-weight:900;color:var(--gd)">Your Items</div>
+    <div id="adminItems" style="margin-top:8px"></div>
+    <button class="primary" onclick="logoutAdmin()" style="background:#777">Logout</button>
+  </div>
+</div>
+</div>
+
+<div class="modal" id="cartModal" onclick="if(event.target===this)closeCart()">
+<div class="panel">
+  <div class="panel-head"><h2>Your AKART Order</h2><button class="close" onclick="closeCart()">×</button></div>
+  <div id="cartItems"></div>
+  <div class="total"><span>Items Total</span><span>₹<span id="modalTotal">0</span></span></div>
+  <div class="delivery-info">Delivery charge: ₹20 up to 2 km · ₹30 for 2–5 km. Final delivery charge can be confirmed by AKART.</div>
+  <div class="form">
+    <input id="customerName" placeholder="Customer name" autocomplete="name">
+    <input id="customerPhone" placeholder="Phone number" inputmode="tel" autocomplete="tel">
+    <textarea id="customerAddress" placeholder="Delivery address / village / landmark"></textarea>
+    <select id="distance" style="width:100%;border:1px solid #d9d2c3;border-radius:9px;padding:10px;background:#fff">
+      <option value="20">Delivery: up to 2 km — ₹20</option>
+      <option value="30">Delivery: 2–5 km — ₹30</option>
+    </select>
+    <button class="primary" onclick="sendOrder()">💬 Send Order on WhatsApp</button>
+  </div>
+</div>
+</div>
+
+<script>
+const WHATSAPP_NUMBER="918136007815";
+const DEFAULT_MENU=[
+{name:"Zinger Burger",cat:"Fast Food",price:120,desc:"Crispy chicken, spiced mayo, fresh bun",image:"https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=700&q=80"},
+{name:"Veg Cheese Burger",cat:"Fast Food",price:90,desc:"Grilled veg patty with double cheese",image:"https://images.unsplash.com/photo-1520072959219-c595dc870360?auto=format&fit=crop&w=700&q=80"},
+{name:"Farmhouse Pizza",cat:"Fast Food",price:220,desc:"Loaded vegetables and mozzarella",image:"https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=700&q=80"},
+{name:"Chicken Pizza",cat:"Fast Food",price:260,desc:"Chicken, cheese and spicy topping",image:"https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=700&q=80"},
+{name:"Peri Peri Fries",cat:"Fast Food",price:70,desc:"Crispy fries with peri peri spice",image:"https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=700&q=80"},
+{name:"Fried Chicken 4pc",cat:"Chicken",price:180,desc:"Crispy outside, juicy inside",image:"https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=700&q=80"},
+{name:"Chicken Kebab 6pc",cat:"Chicken",price:140,desc:"Smoky kebab with chutney",image:"https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=700&q=80"},
+{name:"Chicken Momo 6pc",cat:"Fast Food",price:90,desc:"Steamed momo with spicy chutney",image:"https://images.unsplash.com/photo-1625220194771-7ebdea0b70b9?auto=format&fit=crop&w=700&q=80"},
+{name:"Masala Chai",cat:"Tea & Snacks",price:20,desc:"Hot, strong Assamese-style tea",image:"https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=700&q=80"},
+{name:"Veg Samosa 2pc",cat:"Tea & Snacks",price:30,desc:"Crispy pastry with spiced potato",image:"https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=700&q=80"},
+{name:"Gulab Jamun 2pc",cat:"Sweets",price:40,desc:"Soft, warm and syrup-soaked",image:"https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=700&q=80"},
+{name:"Ice Cream",cat:"Sweets",price:50,desc:"Cold and creamy dessert",image:"https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=700&q=80"},
+{name:"Potato 1kg",cat:"Grocery",price:35,desc:"Fresh daily-use potatoes",image:"https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=700&q=80"},
+{name:"Onion 1kg",cat:"Grocery",price:40,desc:"Fresh onions",image:"https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=700&q=80"},
+{name:"Rice 5kg",cat:"Grocery",price:320,desc:"Everyday household rice",image:"https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=700&q=80"},
+{name:"Cooking Oil 1L",cat:"Grocery",price:150,desc:"Cooking oil",image:"https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=700&q=80"},
+{name:"Mixed Vegetables",cat:"Vegetables",price:60,desc:"Fresh seasonal vegetables",image:"https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=700&q=80"},
+{name:"Tomato 1kg",cat:"Vegetables",price:50,desc:"Fresh red tomatoes",image:"https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=700&q=80"},
+{name:"Green Chilli 250g",cat:"Vegetables",price:25,desc:"Fresh green chilli",image:"https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?auto=format&fit=crop&w=700&q=80"},
+{name:"Fish 1kg",cat:"Fish",price:220,desc:"Fresh local fish — subject to availability",image:"https://images.unsplash.com/photo-1534766555764-4a8c9e0b6f7f?auto=format&fit=crop&w=700&q=80"},
+{name:"Chicken 1kg",cat:"Chicken",price:220,desc:"Fresh chicken — subject to availability",image:"https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=700&q=80"},
+{name:"Assamese Pickle",cat:"Pickles",price:120,desc:"Local-style spicy pickle",image:"https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=700&q=80"},
+{name:"Notebook",cat:"Stationery",price:40,desc:"School/office notebook",image:"https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=700&q=80"},
+{name:"Pen",cat:"Stationery",price:10,desc:"Everyday writing pen",image:"https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=700&q=80"},
+{name:"Pencil Box",cat:"Stationery",price:60,desc:"Useful school stationery",image:"https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=700&q=80"}
+];
+
+let MENU=loadProducts();
+let activeCat="All",cart={};
+let cats=[];
+function loadProducts(){try{const saved=localStorage.getItem("akart_products");return saved?JSON.parse(saved):DEFAULT_MENU.map(x=>({...x}));}catch(e){return DEFAULT_MENU.map(x=>({...x}));}}
+function saveProducts(){localStorage.setItem("akart_products",JSON.stringify(MENU));}
+function refreshCats(){cats=["All",...new Set(MENU.map(x=>x.cat).filter(Boolean))];if(!cats.includes(activeCat))activeCat="All";}
+
+function renderCats(){
+ refreshCats();
+ const bar=document.getElementById("catBar");bar.innerHTML="";
+ cats.forEach(c=>{let b=document.createElement("button");b.className="cat-btn"+(c===activeCat?" active":"");b.textContent=c;b.onclick=()=>{activeCat=c;renderCats();renderMenu()};bar.appendChild(b)})
+}
+function renderMenu(){
+ const grid=document.getElementById("menuGrid");grid.innerHTML="";
+ const items=activeCat==="All"?MENU:MENU.filter(x=>x.cat===activeCat);
+ if(!items.length){grid.innerHTML='<div class="empty">No items available.</div>';return}
+ items.forEach((item,i)=>{
+  const idx=MENU.indexOf(item),qty=cart[idx]||0;
+  const card=document.createElement("div");card.className="item-card";
+  card.innerHTML=`<img class="item-photo" src="${item.image}" alt="${item.name}" loading="lazy" onerror="this.style.display='none'">
+  <div class="item-name">${item.name}</div><div class="item-desc">${item.desc}${item.unit?`<br><small>${item.unit}</small>`:""}</div>
+  <div class="item-footer"><span class="item-price">₹${item.price}</span>
+  <button class="cart-btn" onclick="addToCart(${idx})">${qty?"✓ "+qty:"Add +"}</button></div>`;
+  grid.appendChild(card);
+ })
+}
+function addToCart(i){cart[i]=(cart[i]||0)+1;renderMenu();updateCart()}
+function changeQty(i,d){cart[i]=(cart[i]||0)+d;if(cart[i]<=0)delete cart[i];renderCart();renderMenu();updateCart()}
+function totals(){
+ let count=0,total=0;Object.keys(cart).forEach(i=>{count+=cart[i];total+=MENU[i].price*cart[i]});return{count,total}
+}
+function updateCart(){let t=totals();document.getElementById("cartCount").textContent=`(${t.count})`;document.getElementById("cartTotal").textContent=t.total}
+function renderCart(){
+ const box=document.getElementById("cartItems");box.innerHTML="";
+ Object.keys(cart).forEach(i=>{let x=MENU[i],q=cart[i];let d=document.createElement("div");d.className="cart-item";
+ d.innerHTML=`<div><b>${x.name}</b><br><small>₹${x.price} × ${q} = ₹${x.price*q}</small></div>
+ <div class="qty"><button onclick="changeQty(${i},-1)">−</button><b>${q}</b><button onclick="changeQty(${i},1)">+</button></div>`;box.appendChild(d)});
+ if(!Object.keys(cart).length)box.innerHTML='<div class="empty">Your cart is empty.<br>Add some items first.</div>';
+ document.getElementById("modalTotal").textContent=totals().total
+}
+function openCart(){renderCart();document.getElementById("cartModal").classList.add("show")}
+function closeCart(){document.getElementById("cartModal").classList.remove("show")}
+function sendOrder(){
+ if(!Object.keys(cart).length){alert("Please add at least one item.");return}
+ const name=document.getElementById("customerName").value.trim();
+ const phone=document.getElementById("customerPhone").value.trim();
+ const address=document.getElementById("customerAddress").value.trim();
+ const delivery=Number(document.getElementById("distance").value);
+ if(!name||!phone||!address){alert("Please enter your name, phone number and delivery address.");return}
+ let lines=["Hi AKART, I want to place an order:",""];
+ Object.keys(cart).forEach(i=>{let x=MENU[i];lines.push(`• ${x.name} × ${cart[i]} = ₹${x.price*cart[i]}`)});
+ const itemTotal=totals().total;
+ lines.push("",`Items total: ₹${itemTotal}`,`Delivery charge: ₹${delivery}`,`Estimated total: ₹${itemTotal+delivery}`,"",`Name: ${name}`,`Phone: ${phone}`,`Address: ${address}`);
+ window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`,"_blank");
+}
+function openAdmin(){document.getElementById("adminModal").classList.add("show");document.getElementById("adminPassword").value="";document.getElementById("adminLogin").style.display="block";document.getElementById("adminPanel").style.display="none";}
+function closeAdmin(){document.getElementById("adminModal").classList.remove("show");}
+function adminLogin(){if(document.getElementById("adminPassword").value!=="1234"){alert("Wrong password.");return;}document.getElementById("adminLogin").style.display="none";document.getElementById("adminPanel").style.display="block";renderAdminItems();newItem();}
+function logoutAdmin(){document.getElementById("adminPanel").style.display="none";document.getElementById("adminLogin").style.display="block";}
+function newItem(){document.getElementById("editId").value="";document.getElementById("editName").value="";document.getElementById("editPrice").value="";document.getElementById("editUnit").value="";document.getElementById("editCat").value="";document.getElementById("editImage").value="";document.getElementById("editDesc").value="";}
+function editItem(i){const x=MENU[i];document.getElementById("editId").value=i;document.getElementById("editName").value=x.name;document.getElementById("editPrice").value=x.price;document.getElementById("editUnit").value=x.unit||"";document.getElementById("editCat").value=x.cat||"";document.getElementById("editImage").value=x.image||"";document.getElementById("editDesc").value=x.desc||"";}
+function saveItem(){const name=document.getElementById("editName").value.trim(),price=Number(document.getElementById("editPrice").value),unit=document.getElementById("editUnit").value.trim(),cat=document.getElementById("editCat").value.trim(),image=document.getElementById("editImage").value.trim(),desc=document.getElementById("editDesc").value.trim(),id=document.getElementById("editId").value;if(!name||!cat||!Number.isFinite(price)){alert("Enter item name, category and correct price.");return;}const item={name,price,unit,cat,image,desc};if(id==="")MENU.push(item);else MENU[Number(id)]={...MENU[Number(id)],...item};saveProducts();refreshCats();renderCats();renderMenu();updateCart();renderAdminItems();newItem();alert(id===""?"Item added successfully.":"Item price/details corrected successfully.");}
+function deleteItem(i){if(!confirm("Delete "+MENU[i].name+"?"))return;delete cart[i];MENU.splice(i,1);saveProducts();refreshCats();renderCats();renderMenu();updateCart();renderAdminItems();}
+function renderAdminItems(){const box=document.getElementById("adminItems");box.innerHTML="";MENU.forEach((x,i)=>{const d=document.createElement("div");d.style.cssText="background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px;margin-bottom:7px;display:flex;justify-content:space-between;gap:8px;align-items:center";d.innerHTML=`<div><b>${x.name}</b><br><small>${x.cat} · ₹${x.price}${x.unit?" / "+x.unit:""}</small></div><div style="display:flex;gap:5px"><button class="cat-btn" onclick="editItem(${i})">Edit</button><button class="cat-btn" onclick="deleteItem(${i})">Delete</button></div>`;box.appendChild(d);});}
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}
+refreshCats();renderCats();renderMenu();updateCart();
+</script>
+</body>
+</html>
