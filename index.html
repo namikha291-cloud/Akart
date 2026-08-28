@@ -242,4 +242,629 @@ if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.se
 refreshCats();renderCats();renderMenu();updateCart();
 </script>
 </body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AKART App — Local Delivery | Tengakhat</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0D3B14">
+<meta name="description" content="AKART Tengakhat — order groceries, fast food, vegetables, chicken, fish, sweets, stationery and more through WhatsApp.">
+<style>
+:root{--gd:#0D3B14;--g:#1B8A3E;--gold:#F5A623;--cream:#FBF8F2;--text:#222;--muted:#777;--border:#ece7d9;--white:#fff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--cream);color:var(--text);line-height:1.5;padding-bottom:105px}
+button,input,textarea{font:inherit}
+header{position:sticky;top:0;z-index:50;background:var(--cream);border-bottom:3px solid var(--gd);padding:12px 16px}
+.header-inner{max-width:980px;margin:auto}
+.brand-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.logo{font-size:31px;font-weight:900;letter-spacing:-1.5px}.logo .a{color:var(--g)}.logo .kart{color:var(--gd)}
+.badge{font-size:10px;font-weight:800;color:var(--gd);background:var(--gold);padding:6px 9px;border-radius:99px;white-space:nowrap}.admin-open{border:1px solid var(--gd);background:#fff;color:var(--gd);padding:6px 8px;border-radius:8px;font-size:10px;font-weight:900}
+.cats{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.cats::-webkit-scrollbar{display:none}
+.cat-btn{flex-shrink:0;border:1.5px solid var(--gd);background:transparent;color:var(--gd);padding:7px 13px;border-radius:99px;font-weight:800;font-size:12px}
+.cat-btn.active{background:var(--gd);color:var(--cream)}
+.hero{max-width:980px;margin:18px auto 0;padding:0 16px}
+.hero-card{background:linear-gradient(135deg,var(--gd),var(--g));border-radius:20px;padding:24px;color:var(--cream);box-shadow:0 8px 25px #0d3b1422}
+.hero-eyebrow{font-size:11px;font-weight:900;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase}
+.hero-title{font-size:25px;font-weight:900;margin-top:5px;line-height:1.2}
+.hero-sub{font-size:13px;opacity:.9;margin-top:8px}
+.hero-actions{display:flex;gap:8px;margin-top:15px;flex-wrap:wrap}
+.hero-actions a{background:var(--gold);color:var(--gd);text-decoration:none;padding:9px 13px;border-radius:9px;font-weight:900;font-size:12px}
+main{max-width:980px;margin:auto;padding:18px 16px}
+.section-title{font-size:19px;font-weight:900;color:var(--gd);margin:2px 0 3px}
+.section-sub{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px;margin-top:14px}
+.item-card{background:var(--white);border-radius:15px;padding:14px;border:1px solid var(--border);display:flex;flex-direction:column;gap:7px;box-shadow:0 2px 8px #00000006}
+.item-photo{width:100%;height:145px;object-fit:cover;border-radius:11px;background:#f3eee2;display:block}.item-emoji{display:none}.item-name{font-weight:900;font-size:15px;color:var(--gd)}
+.item-desc{font-size:12px;color:var(--muted);min-height:34px}
+.item-footer{display:flex;align-items:center;justify-content:space-between;margin-top:3px}
+.item-price{font-weight:900;color:var(--gd);font-size:16px}
+.order-btn,.cart-btn{border:0;background:var(--gold);color:var(--gd);border-radius:8px;padding:8px 12px;font-weight:900;font-size:12px;cursor:pointer}
+.cart-bar{position:fixed;bottom:17px;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:620px;z-index:80}
+.cart-bar button{width:100%;background:var(--gd);color:var(--cream);border:0;border-radius:15px;padding:14px 18px;font-weight:900;font-size:15px;box-shadow:0 8px 28px #0d3b1455}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:100;padding:18px;overflow:auto}
+.modal.show{display:flex;align-items:flex-end;justify-content:center}
+.panel{background:var(--cream);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:20px;padding:19px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.panel h2{color:var(--gd);font-size:21px}.close{background:none;border:0;font-size:27px;color:var(--gd)}
+.cart-item{display:flex;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--border);padding:10px;border-radius:10px;margin-bottom:7px}
+.qty{display:flex;align-items:center;gap:7px}.qty button{border:1px solid var(--gd);background:transparent;color:var(--gd);border-radius:6px;width:27px;height:27px;font-weight:900}
+.total{display:flex;justify-content:space-between;font-weight:900;color:var(--gd);font-size:18px;padding:12px 0;border-top:1px solid var(--border);margin-top:10px}
+.form{display:grid;gap:9px;margin-top:8px}.form input,.form textarea{width:100%;border:1px solid #d9d2c3;border-radius:9px;padding:10px;background:#fff;outline:none}.form textarea{min-height:72px;resize:vertical}
+.primary{width:100%;border:0;background:var(--g);color:#fff;border-radius:10px;padding:12px;font-weight:900;margin-top:7px}
+.delivery-info{background:#fff5d9;border:1px solid #f1d58d;border-radius:10px;padding:10px;font-size:12px;color:var(--gd);margin-top:9px}
+footer{max-width:980px;margin:15px auto 0;padding:0 16px;text-align:center;color:var(--muted);font-size:12px}
+.contact{display:flex;justify-content:center;gap:15px;flex-wrap:wrap;margin-bottom:9px;font-size:13px;font-weight:900}.contact a{color:var(--gd);text-decoration:none}
+.empty{text-align:center;padding:30px;color:var(--muted)}
+.portion-row{display:flex;gap:6px;margin-top:2px}
+.portion-btn{flex:1;border:1.5px solid var(--gd);background:transparent;color:var(--gd);padding:6px 4px;border-radius:8px;font-weight:800;font-size:11px;cursor:pointer}
+.portion-btn.active{background:var(--gd);color:var(--cream)}
+.kg-row{display:flex;align-items:center;gap:6px;margin-top:2px}
+.kg-row input{width:100%;border:1px solid #d9d2c3;border-radius:8px;padding:7px 8px;font-size:12px;background:#fff}
+.kg-row span{font-size:11px;color:var(--muted);white-space:nowrap;font-weight:700}
+.file-row{display:flex;align-items:center;gap:8px;background:#fff;border:1px dashed #d9d2c3;border-radius:9px;padding:9px}
+.file-row label{background:var(--gd);color:var(--cream);padding:8px 12px;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer;white-space:nowrap}
+.file-row input[type=file]{display:none}
+.thumb{width:44px;height:44px;object-fit:cover;border-radius:8px;background:#f3eee2}
+.section-label{font-weight:900;color:var(--gd);font-size:13px;margin-top:14px;margin-bottom:2px}
+.hint{font-size:11px;color:var(--muted)}
+.tabbar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tabbtn{border:1.5px solid var(--gd);background:transparent;color:var(--gd);padding:7px 11px;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer}
+.tabbtn.active{background:var(--gd);color:var(--cream)}
+.tabpane{display:none}.tabpane.active{display:block}
+@media(max-width:420px){.logo{font-size:27px}.hero-title{font-size:21px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.item-card{padding:11px}.item-desc{font-size:11px}.item-name{font-size:13px}.item-price{font-size:14px}}
+</style>
+</head>
+<body>
+
+<header>
+<div class="header-inner">
+  <div class="brand-row">
+    <div class="logo"><span class="a">A</span><span class="kart">KART</span></div>
+    <div style="display:flex;align-items:center;gap:7px"><button class="admin-open" onclick="openAdmin()">⚙ Admin</button><div class="badge">● 9 AM – 9 PM · Tengakhat</div></div>
+  </div>
+  <div class="cats" id="catBar"></div>
+</div>
+</header>
+
+<section class="hero">
+<div class="hero-card">
+  <div class="hero-eyebrow">Tengakhat Local Delivery</div>
+  <div class="hero-title">Everything you need.<br>Delivered to your door.</div>
+  <div class="hero-sub">Groceries • Fast Food • Vegetables • Chicken • Fish • Sweets • Stationery & more.</div>
+  <div class="hero-actions">
+    <a id="heroCall" href="tel:+918136007815">📞 Call AKART</a>
+    <a id="heroWa" href="https://wa.me/918136007815" target="_blank">💬 WhatsApp</a>
+  </div>
+</div>
+</section>
+
+<main>
+  <div class="section-title">AKART Shop</div>
+  <div class="section-sub">Real product photos • Select items, add to cart, and send your order on WhatsApp.</div>
+  <div class="grid" id="menuGrid"></div>
+</main>
+
+<footer>
+  <div class="contact">
+    <a id="footCall" href="tel:+918136007815">📞 8136007815</a>
+    <a id="footWa" href="https://wa.me/918136007815" target="_blank">💬 WhatsApp Order</a>
+  </div>
+  <div>Delivery: up to 2 km ₹20 · 2–5 km ₹30</div>
+  <div>AKART — Local. Fast. Reliable. · Tengakhat & nearby areas</div>
+</footer>
+
+<div class="cart-bar">
+  <button onclick="openCart()">🛒 View Cart <span id="cartCount">(0)</span> · ₹<span id="cartTotal">0</span></button>
+</div>
+
+<div class="modal" id="adminModal" onclick="if(event.target===this)closeAdmin()">
+<div class="panel">
+  <div class="panel-head"><h2>AKART Admin</h2><button class="close" onclick="closeAdmin()">×</button></div>
+  <div id="adminLogin">
+    <div class="delivery-info">Admin tools are stored on this phone/browser. Use them to add products and correct prices.</div>
+    <div class="form"><input id="adminPassword" type="password" placeholder="Admin password"><button class="primary" onclick="adminLogin()">Login</button></div>
+  </div>
+  <div id="adminPanel" style="display:none">
+    <div class="tabbar">
+      <button class="tabbtn active" id="tabBtnItems" onclick="showAdminTab('items')">🛍 Items</button>
+      <button class="tabbtn" id="tabBtnCategories" onclick="showAdminTab('categories')">📂 Categories</button>
+      <button class="tabbtn" id="tabBtnSettings" onclick="showAdminTab('settings')">⚙ Settings</button>
+    </div>
+
+    <div class="tabpane active" id="tabItems">
+      <div class="form">
+        <input id="editId" type="hidden">
+        <input id="editName" placeholder="Item name">
+        <input id="editPrice" type="number" min="0" step="0.01" placeholder="Price ₹ (per unit / per kg / per plate)">
+        <input id="editUnit" placeholder="Unit e.g. per kg / per piece / per plate">
+        <select id="editCat"></select>
+        <div style="display:flex;gap:7px">
+          <input id="newCatQuick" placeholder="New category name" style="flex:1">
+          <button class="tabbtn" type="button" onclick="addCategoryQuick()">＋ Category</button>
+        </div>
+        <select id="editPortionType">
+          <option value="unit">Normal item (just Add +)</option>
+          <option value="weight">Sold by weight (customer enters kg, e.g. Potato)</option>
+          <option value="plate">Sold by plate/portion (Half / Full, e.g. Fried Rice)</option>
+        </select>
+        <div class="hint">Choose "Sold by weight" for items like Potato/Onion so customers can order 1.5kg etc. Choose "Sold by plate/portion" for food like Fried Rice so customers can pick Half or Full plate.</div>
+        <div class="file-row">
+          <label for="editImageFile">📷 Upload Photo</label>
+          <input id="editImageFile" type="file" accept="image/*" onchange="handleImageUpload(event)">
+          <img id="editImagePreview" class="thumb" style="display:none" alt="preview">
+          <span id="editImageStatus" class="hint">No photo selected</span>
+        </div>
+        <input id="editImage" placeholder="...or paste a photo URL (https://...)">
+        <textarea id="editDesc" placeholder="Short item description"></textarea>
+        <button class="primary" onclick="saveItem()">💾 Save / Correct Item</button>
+        <button class="primary" onclick="newItem()" style="background:var(--gd)">➕ Add New Item</button>
+      </div>
+      <div style="margin-top:15px;font-weight:900;color:var(--gd)">Your Items</div>
+      <div id="adminItems" style="margin-top:8px"></div>
+    </div>
+
+    <div class="tabpane" id="tabCategories">
+      <div class="delivery-info">Create, rename, or delete your own categories. New categories automatically appear in the shop.</div>
+      <div class="form">
+        <input id="categoryName" placeholder="Category name e.g. Grocery">
+        <button class="primary" onclick="addCategory()">➕ Add Category</button>
+      </div>
+      <div class="section-label">Your Categories</div>
+      <div id="adminCategories" style="margin-top:8px"></div>
+    </div>
+
+    <div class="tabpane" id="tabSettings">
+      <div class="section-label">Mobile Number Correction</div>
+      <div class="hint">This number is used for the WhatsApp order button and the Call AKART button.</div>
+      <div class="form">
+        <input id="adminMobile" placeholder="10-digit mobile number e.g. 8136007815" inputmode="tel">
+        <button class="primary" onclick="saveMobile()">💾 Save Mobile Number</button>
+      </div>
+
+      <div class="section-label">Change Admin Password</div>
+      <div class="form">
+        <input id="oldPassword" type="password" placeholder="Current password">
+        <input id="newPassword" type="password" placeholder="New password">
+        <input id="confirmPassword" type="password" placeholder="Confirm new password">
+        <button class="primary" onclick="changePassword()">🔒 Update Password</button>
+      </div>
+
+      <div class="section-label">Backup & Restore</div>
+      <div class="hint">Export your AKART products/categories as a backup file. Import it later on this device.</div>
+      <div class="form">
+        <button class="primary" onclick="exportData()">⬇️ Export AKART Backup</button>
+        <div class="file-row">
+          <label for="importFile">📥 Import Backup</label>
+          <input id="importFile" type="file" accept=".json,application/json" onchange="importData(event)">
+          <span class="hint">Select an AKART backup JSON file</span>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <button class="primary" onclick="logoutAdmin()" style="background:#777;margin-top:14px">Logout</button>
+  </div>
+</div>
+</div>
+
+<div class="modal" id="cartModal" onclick="if(event.target===this)closeCart()">
+<div class="panel">
+  <div class="panel-head"><h2>Your AKART Order</h2><button class="close" onclick="closeCart()">×</button></div>
+  <div id="cartItems"></div>
+  <div class="total"><span>Items Total</span><span>₹<span id="modalTotal">0</span></span></div>
+  <div class="delivery-info">Delivery charge: ₹20 up to 2 km · ₹30 for 2–5 km. Final delivery charge can be confirmed by AKART.</div>
+  <div class="form">
+    <input id="customerName" placeholder="Customer name" autocomplete="name">
+    <input id="customerPhone" placeholder="Phone number" inputmode="tel" autocomplete="tel">
+    <textarea id="customerAddress" placeholder="Delivery address / village / landmark"></textarea>
+    <select id="distance" style="width:100%;border:1px solid #d9d2c3;border-radius:9px;padding:10px;background:#fff">
+      <option value="20">Delivery: up to 2 km — ₹20</option>
+      <option value="30">Delivery: 2–5 km — ₹30</option>
+    </select>
+    <button class="primary" onclick="sendOrder()">💬 Send Order on WhatsApp</button>
+  </div>
+</div>
+</div>
+
+<script>
+const WHATSAPP_NUMBER="918136007815";
+const DEFAULT_MENU=[
+{name:"Zinger Burger",cat:"Fast Food",price:120,desc:"Crispy chicken, spiced mayo, fresh bun",image:"https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=700&q=80"},
+{name:"Veg Cheese Burger",cat:"Fast Food",price:90,desc:"Grilled veg patty with double cheese",image:"https://images.unsplash.com/photo-1520072959219-c595dc870360?auto=format&fit=crop&w=700&q=80"},
+{name:"Farmhouse Pizza",cat:"Fast Food",price:220,desc:"Loaded vegetables and mozzarella",image:"https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=700&q=80"},
+{name:"Chicken Pizza",cat:"Fast Food",price:260,desc:"Chicken, cheese and spicy topping",image:"https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=700&q=80"},
+{name:"Peri Peri Fries",cat:"Fast Food",price:70,desc:"Crispy fries with peri peri spice",image:"https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=700&q=80"},
+{name:"Fried Chicken 4pc",cat:"Chicken",price:180,desc:"Crispy outside, juicy inside",image:"https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=700&q=80"},
+{name:"Chicken Kebab 6pc",cat:"Chicken",price:140,desc:"Smoky kebab with chutney",image:"https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=700&q=80"},
+{name:"Chicken Momo 6pc",cat:"Fast Food",price:90,desc:"Steamed momo with spicy chutney",image:"https://images.unsplash.com/photo-1625220194771-7ebdea0b70b9?auto=format&fit=crop&w=700&q=80"},
+{name:"Fried Rice",cat:"Fast Food",price:100,unit:"per full plate",portionType:"plate",desc:"Classic veg fried rice, wok-tossed",image:"https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=700&q=80"},
+{name:"Masala Chai",cat:"Tea & Snacks",price:20,desc:"Hot, strong Assamese-style tea",image:"https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=700&q=80"},
+{name:"Veg Samosa 2pc",cat:"Tea & Snacks",price:30,desc:"Crispy pastry with spiced potato",image:"https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=700&q=80"},
+{name:"Gulab Jamun 2pc",cat:"Sweets",price:40,desc:"Soft, warm and syrup-soaked",image:"https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=700&q=80"},
+{name:"Ice Cream",cat:"Sweets",price:50,desc:"Cold and creamy dessert",image:"https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=700&q=80"},
+{name:"Potato",cat:"Grocery",price:35,unit:"per kg",portionType:"weight",desc:"Fresh daily-use potatoes",image:"https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=700&q=80"},
+{name:"Onion",cat:"Grocery",price:40,unit:"per kg",portionType:"weight",desc:"Fresh onions",image:"https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=700&q=80"},
+{name:"Rice 5kg",cat:"Grocery",price:320,desc:"Everyday household rice",image:"https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=700&q=80"},
+{name:"Cooking Oil 1L",cat:"Grocery",price:150,desc:"Cooking oil",image:"https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=700&q=80"},
+{name:"Mixed Vegetables",cat:"Vegetables",price:60,desc:"Fresh seasonal vegetables",image:"https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=700&q=80"},
+{name:"Tomato 1kg",cat:"Vegetables",price:50,desc:"Fresh red tomatoes",image:"https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=700&q=80"},
+{name:"Green Chilli 250g",cat:"Vegetables",price:25,desc:"Fresh green chilli",image:"https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?auto=format&fit=crop&w=700&q=80"},
+{name:"Fish 1kg",cat:"Fish",price:220,desc:"Fresh local fish — subject to availability",image:"https://images.unsplash.com/photo-1534766555764-4a8c9e0b6f7f?auto=format&fit=crop&w=700&q=80"},
+{name:"Chicken 1kg",cat:"Chicken",price:220,desc:"Fresh chicken — subject to availability",image:"https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=700&q=80"},
+{name:"Assamese Pickle",cat:"Pickles",price:120,desc:"Local-style spicy pickle",image:"https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=700&q=80"},
+{name:"Notebook",cat:"Stationery",price:40,desc:"School/office notebook",image:"https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=700&q=80"},
+{name:"Pen",cat:"Stationery",price:10,desc:"Everyday writing pen",image:"https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=700&q=80"},
+{name:"Pencil Box",cat:"Stationery",price:60,desc:"Useful school stationery",image:"https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=700&q=80"}
+];
+
+let MENU=loadProducts();
+let activeCat="All",cart={};
+let cats=[];
+let CATEGORIES=loadCategories();
+let ADMIN_PHONE=loadPhone();
+let ADMIN_PASSWORD=loadPassword();
+function loadProducts(){try{const saved=localStorage.getItem("akart_products");return saved?JSON.parse(saved):DEFAULT_MENU.map(x=>({...x}));}catch(e){return DEFAULT_MENU.map(x=>({...x}));}}
+function saveProducts(){localStorage.setItem("akart_products",JSON.stringify(MENU));}
+function loadPhone(){try{return localStorage.getItem("akart_phone")||WHATSAPP_NUMBER;}catch(e){return WHATSAPP_NUMBER;}}
+function savePhoneToStorage(){localStorage.setItem("akart_phone",ADMIN_PHONE);}
+function loadPassword(){try{return localStorage.getItem("akart_password")||"1234";}catch(e){return "1234";}}
+function savePasswordToStorage(){localStorage.setItem("akart_password",ADMIN_PASSWORD);}
+function applyPhoneToUI(){
+ const clean=ADMIN_PHONE.replace(/\D/g,"");
+ const withCC=clean.length===10?"91"+clean:clean;
+ document.getElementById("heroCall").href="tel:+"+withCC;
+ document.getElementById("heroWa").href="https://wa.me/"+withCC;
+ document.getElementById("footCall").href="tel:+"+withCC;
+ document.getElementById("footCall").textContent="📞 "+clean;
+ document.getElementById("footWa").href="https://wa.me/"+withCC;
+}
+function loadCategories(){
+  try{
+    const saved=localStorage.getItem("akart_categories");
+    if(saved){
+      const arr=JSON.parse(saved);
+      if(Array.isArray(arr) && arr.length) return [...new Set(arr.map(x=>String(x).trim()).filter(Boolean))];
+    }
+  }catch(e){}
+  return [...new Set(DEFAULT_MENU.map(x=>x.cat).filter(Boolean))];
+}
+function saveCategories(){localStorage.setItem("akart_categories",JSON.stringify(CATEGORIES));}
+function refreshCats(){
+  const fromItems=MENU.map(x=>x.cat).filter(Boolean);
+  CATEGORIES=[...new Set([...CATEGORIES,...fromItems].map(x=>String(x).trim()).filter(Boolean))];
+  saveCategories();
+  cats=["All",...CATEGORIES];
+  if(!cats.includes(activeCat))activeCat="All";
+}
+function renderCategorySelect(selected){
+  const el=document.getElementById("editCat");
+  if(!el)return;
+  el.innerHTML="";
+  CATEGORIES.forEach(c=>{
+    const o=document.createElement("option");o.value=c;o.textContent=c;
+    if(c===selected)o.selected=true;
+    el.appendChild(o);
+  });
+}
+
+function renderCats(){
+ refreshCats();
+ const bar=document.getElementById("catBar");bar.innerHTML="";
+ cats.forEach(c=>{let b=document.createElement("button");b.className="cat-btn"+(c===activeCat?" active":"");b.textContent=c;b.onclick=()=>{activeCat=c;renderCats();renderMenu()};bar.appendChild(b)})
+}
+function renderMenu(){
+ const grid=document.getElementById("menuGrid");grid.innerHTML="";
+ const items=activeCat==="All"?MENU:MENU.filter(x=>x.cat===activeCat);
+ if(!items.length){grid.innerHTML='<div class="empty">No items available.</div>';return}
+ items.forEach((item)=>{
+  const idx=MENU.indexOf(item);
+  const inCart=cart[idx];
+  const card=document.createElement("div");card.className="item-card";
+  let controlsHtml="";
+  if(item.portionType==="weight"){
+   controlsHtml=`<div class="kg-row">
+     <input type="number" min="0.1" step="0.1" placeholder="e.g. 1.5" id="kgInput_${idx}" value="${inCart?inCart.qty:''}">
+     <span>kg</span>
+     <button class="cart-btn" onclick="addWeightToCart(${idx})">Add +</button>
+   </div>`;
+  } else if(item.portionType==="plate"){
+   const half=inCart&&inCart.label==="Half plate";
+   const full=inCart&&inCart.label==="Full plate";
+   controlsHtml=`<div class="portion-row">
+     <button class="portion-btn${half?" active":""}" onclick="addPlateToCart(${idx},'Half plate',0.5)">Half</button>
+     <button class="portion-btn${full?" active":""}" onclick="addPlateToCart(${idx},'Full plate',1)">Full</button>
+   </div>`;
+  } else {
+   const qty=inCart?inCart.qty:0;
+   controlsHtml=`<button class="cart-btn" onclick="addUnitToCart(${idx})" style="width:100%">${qty?"✓ "+qty:"Add +"}</button>`;
+  }
+  card.innerHTML=`<img class="item-photo" src="${item.image}" alt="${item.name}" loading="lazy" onerror="this.style.display='none'">
+  <div class="item-name">${item.name}</div><div class="item-desc">${item.desc}${item.unit?`<br><small>${item.unit}</small>`:""}</div>
+  <div class="item-footer"><span class="item-price">₹${item.price}${item.unit?" "+item.unit:""}</span></div>
+  ${controlsHtml}`;
+  grid.appendChild(card);
+ })
+}
+function lineLabel(item,entry){
+ if(item.portionType==="weight")return `${entry.qty} kg`;
+ if(item.portionType==="plate")return entry.label;
+ return `× ${entry.qty}`;
+}
+function linePrice(item,entry){
+ if(item.portionType==="weight")return Math.round(item.price*entry.qty*100)/100;
+ if(item.portionType==="plate")return Math.round(item.price*entry.qty*100)/100;
+ return item.price*entry.qty;
+}
+function addUnitToCart(i){const cur=cart[i]||{qty:0};cur.qty+=1;cart[i]=cur;renderMenu();updateCart()}
+function addWeightToCart(i){
+ const val=Number(document.getElementById("kgInput_"+i).value);
+ if(!val||val<=0){alert("Please enter a valid weight in kg, e.g. 1.5");return}
+ cart[i]={qty:val};renderMenu();updateCart();
+}
+function addPlateToCart(i,label,frac){cart[i]={qty:frac,label};renderMenu();updateCart()}
+function changeQty(i,d){
+ const item=MENU[i],entry=cart[i];if(!entry)return;
+ if(item.portionType==="weight"){entry.qty=Math.round((entry.qty+d*0.5)*10)/10;if(entry.qty<=0)delete cart[i];}
+ else if(item.portionType==="plate"){delete cart[i];}
+ else{entry.qty=(entry.qty||0)+d;if(entry.qty<=0)delete cart[i];}
+ renderCart();renderMenu();updateCart()
+}
+function removeCartItem(i){delete cart[i];renderCart();renderMenu();updateCart()}
+function totals(){
+ let count=0,total=0;
+ Object.keys(cart).forEach(i=>{const item=MENU[i],entry=cart[i];count+=1;total+=linePrice(item,entry)});
+ return{count,total:Math.round(total*100)/100}
+}
+function updateCart(){let t=totals();document.getElementById("cartCount").textContent=`(${t.count})`;document.getElementById("cartTotal").textContent=t.total}
+function renderCart(){
+ const box=document.getElementById("cartItems");box.innerHTML="";
+ Object.keys(cart).forEach(i=>{
+  const x=MENU[i],entry=cart[i];
+  const lp=linePrice(x,entry);
+  let d=document.createElement("div");d.className="cart-item";
+  if(x.portionType==="weight"){
+   d.innerHTML=`<div><b>${x.name}</b><br><small>₹${x.price}/kg × ${entry.qty}kg = ₹${lp}</small></div>
+   <div class="qty"><button onclick="changeQty(${i},-1)">−</button><b>${entry.qty}kg</b><button onclick="changeQty(${i},1)">+</button></div>`;
+  } else if(x.portionType==="plate"){
+   d.innerHTML=`<div><b>${x.name}</b><br><small>${entry.label} = ₹${lp}</small></div>
+   <div class="qty"><button onclick="removeCartItem(${i})">Remove</button></div>`;
+  } else {
+   d.innerHTML=`<div><b>${x.name}</b><br><small>₹${x.price} × ${entry.qty} = ₹${lp}</small></div>
+   <div class="qty"><button onclick="changeQty(${i},-1)">−</button><b>${entry.qty}</b><button onclick="changeQty(${i},1)">+</button></div>`;
+  }
+  box.appendChild(d);
+ });
+ if(!Object.keys(cart).length)box.innerHTML='<div class="empty">Your cart is empty.<br>Add some items first.</div>';
+ document.getElementById("modalTotal").textContent=totals().total
+}
+function openCart(){renderCart();document.getElementById("cartModal").classList.add("show")}
+function closeCart(){document.getElementById("cartModal").classList.remove("show")}
+function sendOrder(){
+ if(!Object.keys(cart).length){alert("Please add at least one item.");return}
+ const name=document.getElementById("customerName").value.trim();
+ const phone=document.getElementById("customerPhone").value.trim();
+ const address=document.getElementById("customerAddress").value.trim();
+ const delivery=Number(document.getElementById("distance").value);
+ if(!name||!phone||!address){alert("Please enter your name, phone number and delivery address.");return}
+ let lines=["Hi AKART, I want to place an order:",""];
+ Object.keys(cart).forEach(i=>{
+  const x=MENU[i],entry=cart[i],lp=linePrice(x,entry);
+  lines.push(`• ${x.name} ${lineLabel(x,entry)} = ₹${lp}`);
+ });
+ const itemTotal=totals().total;
+ lines.push("",`Items total: ₹${itemTotal}`,`Delivery charge: ₹${delivery}`,`Estimated total: ₹${itemTotal+delivery}`,"",`Name: ${name}`,`Phone: ${phone}`,`Address: ${address}`);
+ const clean=ADMIN_PHONE.replace(/\D/g,"");
+ const withCC=clean.length===10?"91"+clean:clean;
+ window.open(`https://wa.me/${withCC}?text=${encodeURIComponent(lines.join("\n"))}`,"_blank");
+}
+function openAdmin(){document.getElementById("adminModal").classList.add("show");document.getElementById("adminPassword").value="";document.getElementById("adminLogin").style.display="block";document.getElementById("adminPanel").style.display="none";}
+function closeAdmin(){document.getElementById("adminModal").classList.remove("show");}
+function adminLogin(){
+ if(document.getElementById("adminPassword").value!==ADMIN_PASSWORD){alert("Wrong password.");return;}
+ document.getElementById("adminLogin").style.display="none";
+ document.getElementById("adminPanel").style.display="block";
+ document.getElementById("adminMobile").value=ADMIN_PHONE;
+ showAdminTab('items');
+ renderAdminItems();renderAdminCategories();newItem();
+}
+function logoutAdmin(){document.getElementById("adminPanel").style.display="none";document.getElementById("adminLogin").style.display="block";}
+function showAdminTab(tab){
+ document.getElementById("tabItems").classList.toggle("active",tab==="items");
+ document.getElementById("tabSettings").classList.toggle("active",tab==="settings");
+ document.getElementById("tabBtnItems").classList.toggle("active",tab==="items");
+ document.getElementById("tabBtnSettings").classList.toggle("active",tab==="settings");
+}
+function newItem(){
+ document.getElementById("editId").value="";
+ document.getElementById("editName").value="";
+ document.getElementById("editPrice").value="";
+ document.getElementById("editUnit").value="";
+ renderCategorySelect(CATEGORIES[0]||"");
+ document.getElementById("editPortionType").value="unit";
+ document.getElementById("editImage").value="";
+ document.getElementById("editDesc").value="";
+ document.getElementById("editImageFile").value="";
+ document.getElementById("editImagePreview").style.display="none";
+ document.getElementById("editImageStatus").textContent="No photo selected";
+}
+function editItem(i){
+ const x=MENU[i];
+ document.getElementById("editId").value=i;
+ document.getElementById("editName").value=x.name;
+ document.getElementById("editPrice").value=x.price;
+ document.getElementById("editUnit").value=x.unit||"";
+ renderCategorySelect(x.cat||CATEGORIES[0]||"");
+ document.getElementById("editPortionType").value=x.portionType||"unit";
+ document.getElementById("editImage").value=x.image||"";
+ document.getElementById("editDesc").value=x.desc||"";
+ document.getElementById("editImageFile").value="";
+ if(x.image){document.getElementById("editImagePreview").src=x.image;document.getElementById("editImagePreview").style.display="block";document.getElementById("editImageStatus").textContent="Current photo shown";}
+ else{document.getElementById("editImagePreview").style.display="none";document.getElementById("editImageStatus").textContent="No photo selected";}
+}
+function handleImageUpload(evt){
+  const file=evt.target.files[0];
+  if(!file)return;
+  if(!file.type.startsWith("image/")){alert("Please choose an image file.");evt.target.value="";return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const img=new Image();
+    img.onload=function(){
+      const max=1000;
+      const scale=Math.min(1,max/Math.max(img.width,img.height));
+      const w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
+      const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0,w,h);
+      const data=canvas.toDataURL("image/jpeg",0.78);
+      if(data.length>450000){alert("This photo is still too large. Please choose a smaller photo.");evt.target.value="";return;}
+      document.getElementById("editImage").value=data;
+      document.getElementById("editImagePreview").src=data;
+      document.getElementById("editImagePreview").style.display="block";
+      document.getElementById("editImageStatus").textContent="Photo ready — click Save to apply";
+    };
+    img.onerror=function(){alert("Could not read this image.");};
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function saveItem(){
+ const name=document.getElementById("editName").value.trim(),
+ price=Number(document.getElementById("editPrice").value),
+ unit=document.getElementById("editUnit").value.trim(),
+ cat=document.getElementById("editCat").value.trim(),
+ portionType=document.getElementById("editPortionType").value,
+ image=document.getElementById("editImage").value.trim(),
+ desc=document.getElementById("editDesc").value.trim(),
+ id=document.getElementById("editId").value;
+ if(!name||!cat||!Number.isFinite(price)){alert("Enter item name, category and correct price.");return;}
+ const item={name,price,unit,cat,portionType,image,desc};
+ if(id==="")MENU.push(item);else MENU[Number(id)]={...MENU[Number(id)],...item};
+ saveProducts();refreshCats();renderCats();renderMenu();updateCart();renderCategorySelect(CATEGORIES[0]||"");renderAdminCategories();renderAdminItems();renderAdminCategories();newItem();
+ alert(id===""?"Item added successfully.":"Item price/details corrected successfully.");
+}
+function deleteItem(i){if(!confirm("Delete "+MENU[i].name+"?"))return;delete cart[i];MENU.splice(i,1);saveProducts();refreshCats();renderCats();renderMenu();updateCart();renderAdminItems();}
+function addCategory(){
+  const input=document.getElementById("categoryName");
+  const name=input.value.trim();
+  if(!name){alert("Enter a category name.");return;}
+  if(CATEGORIES.some(c=>c.toLowerCase()===name.toLowerCase())){alert("That category already exists.");return;}
+  CATEGORIES.push(name);saveCategories();input.value="";
+  refreshCats();renderCats();renderAdminCategories();renderCategorySelect(name);
+  alert("Category added successfully.");
+}
+function addCategoryQuick(){
+  const input=document.getElementById("newCatQuick");
+  const name=input.value.trim();
+  if(!name){alert("Enter a category name.");return;}
+  if(CATEGORIES.some(c=>c.toLowerCase()===name.toLowerCase())){alert("That category already exists.");return;}
+  CATEGORIES.push(name);saveCategories();input.value="";
+  refreshCats();renderCats();renderAdminCategories();renderCategorySelect(name);
+}
+function renameCategory(i){
+  const old=CATEGORIES[i];
+  const next=prompt("Rename category:",old);
+  if(next===null)return;
+  const name=next.trim();
+  if(!name||name===old)return;
+  if(CATEGORIES.some((c,j)=>j!==i&&c.toLowerCase()===name.toLowerCase())){alert("That category already exists.");return;}
+  MENU.forEach(x=>{if(x.cat===old)x.cat=name;});
+  CATEGORIES[i]=name;saveCategories();saveProducts();
+  if(activeCat===old)activeCat=name;
+  refreshCats();renderCats();renderMenu();renderAdminItems();renderAdminCategories();renderCategorySelect(name);
+}
+function deleteCategory(i){
+  const name=CATEGORIES[i];
+  const used=MENU.some(x=>x.cat===name);
+  if(used){
+    alert("This category contains items. Move or delete those items first.");
+    return;
+  }
+  if(CATEGORIES.length<=1){alert("Keep at least one category.");return;}
+  if(!confirm("Delete category '"+name+"'?"))return;
+  CATEGORIES.splice(i,1);saveCategories();
+  if(activeCat===name)activeCat="All";
+  refreshCats();renderCats();renderMenu();renderAdminCategories();renderCategorySelect(CATEGORIES[0]||"");
+}
+function renderAdminCategories(){
+  const box=document.getElementById("adminCategories"); if(!box)return;
+  box.innerHTML="";
+  CATEGORIES.forEach((c,i)=>{
+    const count=MENU.filter(x=>x.cat===c).length;
+    const d=document.createElement("div");
+    d.style.cssText="background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px;margin-bottom:7px;display:flex;justify-content:space-between;gap:8px;align-items:center";
+    d.innerHTML=`<div><b>${c}</b><br><small>${count} item${count===1?"":"s"}</small></div>
+      <div style="display:flex;gap:5px"><button class="cat-btn" onclick="renameCategory(${i})">Rename</button>
+      <button class="cat-btn" onclick="deleteCategory(${i})">Delete</button></div>`;
+    box.appendChild(d);
+  });
+}
+
+function renderAdminItems(){const box=document.getElementById("adminItems");box.innerHTML="";MENU.forEach((x,i)=>{const d=document.createElement("div");d.style.cssText="background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px;margin-bottom:7px;display:flex;justify-content:space-between;gap:8px;align-items:center";d.innerHTML=`<div><b>${x.name}</b><br><small>${x.cat} · ₹${x.price}${x.unit?" / "+x.unit:""}${x.portionType&&x.portionType!=="unit"?" · "+(x.portionType==="weight"?"by weight":"by plate"):""}</small></div><div style="display:flex;gap:5px"><button class="cat-btn" onclick="editItem(${i})">Edit</button><button class="cat-btn" onclick="deleteItem(${i})">Delete</button></div>`;box.appendChild(d);});}
+
+function saveMobile(){
+ const val=document.getElementById("adminMobile").value.trim();
+ const digits=val.replace(/\D/g,"");
+ if(digits.length<10){alert("Please enter a valid 10-digit mobile number.");return;}
+ ADMIN_PHONE=digits.slice(-10);
+ savePhoneToStorage();
+ applyPhoneToUI();
+ alert("Mobile number updated successfully.");
+}
+function changePassword(){
+ const oldP=document.getElementById("oldPassword").value;
+ const newP=document.getElementById("newPassword").value;
+ const confP=document.getElementById("confirmPassword").value;
+ if(oldP!==ADMIN_PASSWORD){alert("Current password is incorrect.");return;}
+ if(!newP||newP.length<4){alert("New password should be at least 4 characters.");return;}
+ if(newP!==confP){alert("New password and confirm password do not match.");return;}
+ ADMIN_PASSWORD=newP;
+ savePasswordToStorage();
+ document.getElementById("oldPassword").value="";
+ document.getElementById("newPassword").value="";
+ document.getElementById("confirmPassword").value="";
+ alert("Password updated successfully.");
+}
+
+function exportData(){
+  const data={
+    version:1,
+    exportedAt:new Date().toISOString(),
+    products:MENU,
+    categories:CATEGORIES,
+    phone:ADMIN_PHONE
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="akart-backup.json";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function importData(evt){
+  const file=evt.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!Array.isArray(data.products)||!Array.isArray(data.categories))throw new Error("Invalid backup");
+      if(!confirm("Import this backup? Current products/categories will be replaced.")){evt.target.value="";return;}
+      MENU=data.products;
+      CATEGORIES=[...new Set(data.categories.map(x=>String(x).trim()).filter(Boolean))];
+      if(data.phone)ADMIN_PHONE=String(data.phone).replace(/\D/g,"").slice(-10)||ADMIN_PHONE;
+      saveProducts();saveCategories();savePhoneToStorage();
+      applyPhoneToUI();refreshCats();renderCats();renderMenu();updateCart();renderAdminItems();renderAdminCategories();newItem();
+      alert("AKART backup imported successfully.");
+    }catch(err){alert("Invalid AKART backup file.");}
+    evt.target.value="";
+  };
+  reader.readAsText(file);
+}
+
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}
+applyPhoneToUI();
+refreshCats();renderCats();renderMenu();updateCart();
+</script>
+</body>
 </html>
