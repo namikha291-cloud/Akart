@@ -224,6 +224,26 @@ footer{max-width:980px;margin:15px auto 0;padding:0 16px;text-align:center;color
 </div>
 </div>
 
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCDhmGrV5gCiGEZU_YpMzzrkNlJD0oHH2k",
+  authDomain: "akart-2e52f.firebaseapp.com",
+  projectId: "akart-2e52f",
+  storageBucket: "akart-2e52f.firebasestorage.app",
+  messagingSenderId: "943192910643",
+  appId: "1:943192910643:web:7ba92c7d655e0e5176ac46"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const shopDocRef = doc(db, "akart", "shopdata");
+
+window.__akartDb = { doc, getDoc, setDoc, onSnapshot, shopDocRef, db };
+window.dispatchEvent(new Event("akart-firebase-ready"));
+</script>
+
 <script>
 const WHATSAPP_NUMBER="918136007815";
 const DEFAULT_MENU=[
@@ -255,18 +275,62 @@ const DEFAULT_MENU=[
 {name:"Pencil Box",cat:"Stationery",price:60,desc:"Useful school stationery",image:"https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=700&q=80"}
 ];
 
-let MENU=loadProducts();
+let MENU=DEFAULT_MENU.map(x=>({...x}));
 let activeCat="All",cart={};
 let cats=[];
-let CATEGORIES=loadCategories();
-let ADMIN_PHONE=loadPhone();
+let CATEGORIES=[...new Set(DEFAULT_MENU.map(x=>x.cat).filter(Boolean))];
+let ADMIN_PHONE=WHATSAPP_NUMBER;
 let ADMIN_PASSWORD=loadPassword();
-function loadProducts(){try{const saved=localStorage.getItem("akart_products");return saved?JSON.parse(saved):DEFAULT_MENU.map(x=>({...x}));}catch(e){return DEFAULT_MENU.map(x=>({...x}));}}
-function saveProducts(){localStorage.setItem("akart_products",JSON.stringify(MENU));}
-function loadPhone(){try{return localStorage.getItem("akart_phone")||WHATSAPP_NUMBER;}catch(e){return WHATSAPP_NUMBER;}}
-function savePhoneToStorage(){localStorage.setItem("akart_phone",ADMIN_PHONE);}
+let __suppressNextSnapshot=false;
+
+// ---- Cloud sync (Firestore) ----
+// Products, categories and phone number now live in the cloud so every
+// device sees the same data. Password stays local to this device/browser.
+async function saveToCloud(){
+  const { setDoc, shopDocRef } = window.__akartDb;
+  __suppressNextSnapshot=true;
+  try{
+    await setDoc(shopDocRef,{products:MENU,categories:CATEGORIES,phone:ADMIN_PHONE,updatedAt:Date.now()});
+  }catch(e){
+    console.error("Cloud save failed",e);
+    alert("Could not save to the cloud. Check your internet connection and try again.");
+  }
+}
+function saveProducts(){saveToCloud();}
+function saveCategories(){saveToCloud();}
+function savePhoneToStorage(){saveToCloud();}
+
 function loadPassword(){try{return localStorage.getItem("akart_password")||"1234";}catch(e){return "1234";}}
 function savePasswordToStorage(){localStorage.setItem("akart_password",ADMIN_PASSWORD);}
+
+function applyCloudData(data){
+  MENU=Array.isArray(data.products)&&data.products.length?data.products:DEFAULT_MENU.map(x=>({...x}));
+  CATEGORIES=Array.isArray(data.categories)&&data.categories.length?[...new Set(data.categories.map(x=>String(x).trim()).filter(Boolean))]:[...new Set(DEFAULT_MENU.map(x=>x.cat).filter(Boolean))];
+  ADMIN_PHONE=data.phone||WHATSAPP_NUMBER;
+  applyPhoneToUI();refreshCats();renderCats();renderMenu();updateCart();
+  const adminPanelOpen=document.getElementById("adminPanel").style.display==="block";
+  if(adminPanelOpen){renderAdminItems();renderAdminCategories();}
+}
+
+async function initCloudSync(){
+  const { getDoc, setDoc, onSnapshot, shopDocRef } = window.__akartDb;
+  try{
+    const snap=await getDoc(shopDocRef);
+    if(snap.exists()){
+      applyCloudData(snap.data());
+    } else {
+      // First-ever load: seed the cloud with the default menu.
+      await setDoc(shopDocRef,{products:MENU,categories:CATEGORIES,phone:ADMIN_PHONE,updatedAt:Date.now()});
+    }
+  }catch(e){
+    console.error("Initial cloud load failed",e);
+  }
+  // Live updates: if data changes from any device, this device updates automatically.
+  onSnapshot(shopDocRef,(snap)=>{
+    if(__suppressNextSnapshot){__suppressNextSnapshot=false;return;}
+    if(snap.exists())applyCloudData(snap.data());
+  },(err)=>console.error("Live sync error",err));
+}
 function applyPhoneToUI(){
  const clean=ADMIN_PHONE.replace(/\D/g,"");
  const withCC=clean.length===10?"91"+clean:clean;
@@ -472,8 +536,8 @@ function handleImageUpload(evt){
       const w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
       const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
       const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0,w,h);
-      const data=canvas.toDataURL("image/jpeg",0.78);
-      if(data.length>450000){alert("This photo is still too large. Please choose a smaller photo.");evt.target.value="";return;}
+      const data=canvas.toDataURL("image/jpeg",0.6);
+      if(data.length>120000){alert("This photo is still too large. Please choose a smaller/simpler photo.");evt.target.value="";return;}
       document.getElementById("editImage").value=data;
       document.getElementById("editImagePreview").src=data;
       document.getElementById("editImagePreview").style.display="block";
@@ -621,6 +685,7 @@ function importData(evt){
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}
 applyPhoneToUI();
 refreshCats();renderCats();renderMenu();updateCart();
+if(window.__akartDb){initCloudSync();}else{window.addEventListener("akart-firebase-ready",initCloudSync,{once:true});}
 </script>
 </body>
 </html>
