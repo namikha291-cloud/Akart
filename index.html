@@ -227,6 +227,7 @@ footer{max-width:980px;margin:15px auto 0;padding:0 16px;text-align:center;color
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCDhmGrV5gCiGEZU_YpMzzrkNlJD0oHH2k",
@@ -238,9 +239,10 @@ const firebaseConfig = {
 };
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
+const storage = getStorage(fbApp);
 const shopDocRef = doc(db, "akart", "shopdata");
 
-window.__akartDb = { doc, getDoc, setDoc, onSnapshot, shopDocRef, db };
+window.__akartDb = { doc, getDoc, setDoc, onSnapshot, shopDocRef, db, storage, ref, uploadBytes, getDownloadURL };
 window.dispatchEvent(new Event("akart-firebase-ready"));
 </script>
 
@@ -340,21 +342,9 @@ function applyPhoneToUI(){
  document.getElementById("footCall").textContent="📞 "+clean;
  document.getElementById("footWa").href="https://wa.me/"+withCC;
 }
-function loadCategories(){
-  try{
-    const saved=localStorage.getItem("akart_categories");
-    if(saved){
-      const arr=JSON.parse(saved);
-      if(Array.isArray(arr) && arr.length) return [...new Set(arr.map(x=>String(x).trim()).filter(Boolean))];
-    }
-  }catch(e){}
-  return [...new Set(DEFAULT_MENU.map(x=>x.cat).filter(Boolean))];
-}
-function saveCategories(){localStorage.setItem("akart_categories",JSON.stringify(CATEGORIES));}
 function refreshCats(){
   const fromItems=MENU.map(x=>x.cat).filter(Boolean);
   CATEGORIES=[...new Set([...CATEGORIES,...fromItems].map(x=>String(x).trim()).filter(Boolean))];
-  saveCategories();
   cats=["All",...CATEGORIES];
   if(!cats.includes(activeCat))activeCat="All";
 }
@@ -492,8 +482,10 @@ function adminLogin(){
 function logoutAdmin(){document.getElementById("adminPanel").style.display="none";document.getElementById("adminLogin").style.display="block";}
 function showAdminTab(tab){
  document.getElementById("tabItems").classList.toggle("active",tab==="items");
+ document.getElementById("tabCategories").classList.toggle("active",tab==="categories");
  document.getElementById("tabSettings").classList.toggle("active",tab==="settings");
  document.getElementById("tabBtnItems").classList.toggle("active",tab==="items");
+ document.getElementById("tabBtnCategories").classList.toggle("active",tab==="categories");
  document.getElementById("tabBtnSettings").classList.toggle("active",tab==="settings");
 }
 function newItem(){
@@ -523,6 +515,8 @@ function editItem(i){
  if(x.image){document.getElementById("editImagePreview").src=x.image;document.getElementById("editImagePreview").style.display="block";document.getElementById("editImageStatus").textContent="Current photo shown";}
  else{document.getElementById("editImagePreview").style.display="none";document.getElementById("editImageStatus").textContent="No photo selected";}
 }
+
+// ---- Photo upload: goes to Firebase Storage, only the URL is stored in Firestore ----
 function handleImageUpload(evt){
   const file=evt.target.files[0];
   if(!file)return;
@@ -536,18 +530,32 @@ function handleImageUpload(evt){
       const w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
       const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
       const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0,w,h);
-      const data=canvas.toDataURL("image/jpeg",0.6);
-      if(data.length>120000){alert("This photo is still too large. Please choose a smaller/simpler photo.");evt.target.value="";return;}
-      document.getElementById("editImage").value=data;
-      document.getElementById("editImagePreview").src=data;
-      document.getElementById("editImagePreview").style.display="block";
-      document.getElementById("editImageStatus").textContent="Photo ready — click Save to apply";
+      document.getElementById("editImageStatus").textContent="Uploading photo...";
+      canvas.toBlob(async function(blob){
+        if(!blob){alert("Could not process this image.");evt.target.value="";return;}
+        try{
+          const { storage, ref, uploadBytes, getDownloadURL } = window.__akartDb;
+          const path="products/"+Date.now()+"_"+Math.random().toString(36).slice(2)+".jpg";
+          const storageRef=ref(storage,path);
+          await uploadBytes(storageRef,blob);
+          const url=await getDownloadURL(storageRef);
+          document.getElementById("editImage").value=url;
+          document.getElementById("editImagePreview").src=url;
+          document.getElementById("editImagePreview").style.display="block";
+          document.getElementById("editImageStatus").textContent="Photo uploaded — click Save to apply";
+        }catch(err){
+          console.error("Photo upload failed",err);
+          alert("Photo upload failed. Check your internet connection and try again.");
+          document.getElementById("editImageStatus").textContent="Upload failed — try again";
+        }
+      },"image/jpeg",0.75);
     };
     img.onerror=function(){alert("Could not read this image.");};
     img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 }
+
 function saveItem(){
  const name=document.getElementById("editName").value.trim(),
  price=Number(document.getElementById("editPrice").value),
