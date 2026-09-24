@@ -534,13 +534,17 @@ function handleImageUpload(evt){
       canvas.toBlob(async function(blob){
         if(!blob){alert("Could not process this image.");evt.target.value="";return;}
         try{
-          const { storage, ref, uploadBytes, getDownloadURL } = window.__akartDb;
-          const path="products/"+Date.now()+"_"+Math.random().toString(36).slice(2)+".jpg";
-          const storageRef=ref(storage,path);
-          await uploadBytes(storageRef,blob);
-          const url=await getDownloadURL(storageRef);
-          document.getElementById("editImage").value=url;
-          document.getElementById("editImagePreview").src=url;
+          const formData=new FormData();
+          formData.append("file",blob);
+          formData.append("upload_preset","Akart Delivery");
+          const res=await fetch("https://api.cloudinary.com/v1_1/auhjxw6t/image/upload",{
+            method:"POST",
+            body:formData
+          });
+          const data=await res.json();
+          if(!data.secure_url)throw new Error("Upload failed");
+          document.getElementById("editImage").value=data.secure_url;
+          document.getElementById("editImagePreview").src=data.secure_url;
           document.getElementById("editImagePreview").style.display="block";
           document.getElementById("editImageStatus").textContent="Photo uploaded — click Save to apply";
         }catch(err){
