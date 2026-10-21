@@ -133,6 +133,15 @@ footer{max-width:1100px;margin:0 auto;padding:6px 16px 18px;text-align:center;co
 .adm-row{flex-wrap:wrap}
 @media(min-width:560px){.cat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(min-width:860px){.cat-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* ---------- Orders (admin) ---------- */
+.ord{background:#fff;border:1px solid var(--border);border-left:5px solid var(--gold);border-radius:10px;padding:10px;margin-bottom:8px;font-size:13px;display:grid;gap:4px}
+.ord.done{border-left-color:#9bb;opacity:.7}
+.ord-h{display:flex;justify-content:space-between;color:var(--gd)}
+.ord ul{margin:2px 0 2px 18px;font-size:12px}
+.ord-t{font-weight:900;color:var(--gd)}
+.ord-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
+.ord-b a.mini{text-decoration:none}
+#adminBadge,#ordBadge{font-weight:900;color:#e53935}
 /* ---------- Larger screens ---------- */
 @media(min-width:560px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.side{width:120px}.side-btn{font-size:12px}.side-btn .pic{width:64px;height:64px}}
 @media(min-width:860px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.side{width:140px}.content{padding:18px 20px 30px}.modal.show{align-items:center}}
@@ -146,7 +155,7 @@ footer{max-width:1100px;margin:0 auto;padding:6px 16px 18px;text-align:center;co
     <div class="brand-row">
       <div class="logo"><span class="a">A</span><span class="kart">KART</span><small>All Categories · Tengakhat · 9 AM – 9 PM</small></div>
       <div class="head-actions">
-        <button class="admin-open" onclick="openAdmin()">⚙ Admin</button>
+        <button class="admin-open" onclick="openAdmin()">⚙ Admin<span id="adminBadge"></span></button>
         <button class="icon-btn" onclick="openCart()" aria-label="Open cart">🛒<span class="count" id="headCount">0</span></button>
       </div>
     </div>
@@ -184,6 +193,7 @@ footer{max-width:1100px;margin:0 auto;padding:6px 16px 18px;text-align:center;co
   <div id="adminPanel" style="display:none">
     <div class="tabbar">
       <button class="tabbtn active" id="tabBtnItems" onclick="showAdminTab('items')">🛍 Items</button>
+      <button class="tabbtn" id="tabBtnOrders" onclick="showAdminTab('orders')">🧾 Orders <span id="ordBadge"></span></button>
       <button class="tabbtn" id="tabBtnCategories" onclick="showAdminTab('categories')">📂 Categories</button>
       <button class="tabbtn" id="tabBtnSettings" onclick="showAdminTab('settings')">⚙ Settings</button>
     </div>
@@ -221,9 +231,14 @@ footer{max-width:1100px;margin:0 auto;padding:6px 16px 18px;text-align:center;co
       <div id="adminItems" style="margin-top:8px"></div>
     </div>
 
+    <div class="tabpane" id="tabOrders">
+      <div class="hint" id="ordHint">Orders sent from the website appear here. Keep this page open for a sound alert.</div>
+      <div id="adminOrders" style="margin-top:8px"></div>
+    </div>
+
     <div class="tabpane" id="tabCategories">
       <div class="delivery-info">Create, rename or delete categories. They appear in the left menu of the shop. Tap 📷 Photo to set each category's picture.</div>
-      <input id="catPhotoFile" type="file" accept="image/*" style="display:none" onchange="handleCatPhoto(event)">
+      <input id="catPhotoFile" type="file" accept="image/*" style="position:absolute;width:0;height:0;opacity:0" onchange="handleCatPhoto(event)">
       <div class="form">
         <input id="categoryName" placeholder="Category name e.g. Grocery">
         <button class="primary" onclick="addCategory()">➕ Add Category</button>
@@ -309,7 +324,7 @@ footer{max-width:1100px;margin:0 auto;padding:6px 16px 18px;text-align:center;co
 <!-- ================= FIREBASE ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, orderBy, limit, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig = {
@@ -325,13 +340,16 @@ const db = getFirestore(fbApp);
 const storage = getStorage(fbApp);
 const shopDocRef = doc(db, "akart", "shopdata");
 
-window.__akartDb = { doc, getDoc, setDoc, onSnapshot, shopDocRef, db, storage, ref, uploadBytes, getDownloadURL };
+window.__akartDb = { doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, orderBy, limit, updateDoc, deleteDoc, shopDocRef, db, storage, ref, uploadBytes, getDownloadURL };
 window.dispatchEvent(new Event("akart-firebase-ready"));
 </script>
 
 <!-- ================= APP ================= -->
 <script>
 /* ---------- Defaults ---------- */
+/* ---- Telegram order alerts (see setup steps) ---- */
+const TELEGRAM_BOT_TOKEN="";   // paste bot token from @BotFather
+const TELEGRAM_CHAT_ID="";     // paste your group chat id (starts with -100...)
 const DEFAULT_AREAS=["Tengakhat","Sabuwa","Naharkatia","Tingkhong","Rajgarh"];
 const DEFAULT_MENU=[
 {name:"Zinger Burger",cat:"Fast Food",price:120,desc:"Crispy chicken, spiced mayo, fresh bun",image:"https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=700&q=80"},
@@ -584,11 +602,15 @@ function sendOrder(){
   }
   const del=Number($("distance").value)||20,sub=cartSub(),total=sub+del;
   const distLabel=del===20?"Up to 2 km":"2–5 km";
-  let msg="*New AKART Order*\n\n";
+  const orderNo="AK"+Date.now().toString().slice(-6);
+  let msg="*New AKART Order #"+orderNo+"*\n\n";
   cart.forEach((c,i)=>{msg+=`${i+1}. ${c.name}${c.label&&!c.weight?" ("+c.label+")":""} — ${money(c.qty)}${c.weight?" kg":""} × ₹${money(c.price)} = ₹${money(c.price*c.qty)}\n`});
   msg+=`\nItems Total: ₹${money(sub)}\nDelivery (${distLabel}): ₹${del}\n*Grand Total: ₹${money(total)}*\n\n`;
   msg+=`*Name:* ${name}\n*Mobile:* ${phone}\n*Area:* ${area}\n*Address:* ${address}`;
   window.open("https://wa.me/91"+state.mobile+"?text="+encodeURIComponent(msg),"_blank");
+  const order={orderNo,createdAt:Date.now(),name,phone,area,address,distance:distLabel,delivery:del,subtotal:sub,total,status:"new",
+    items:cart.map(c=>({name:c.name,label:c.label||"",qty:c.qty,price:c.price,weight:!!c.weight}))};
+  saveOrder(order);notifyTelegram(order);
   cart=[];saveCart();closeCart();
   ["customerName","customerPhone","customerAddress"].forEach(i=>$(i).value="");$("customerArea").value="";
   toast("Order sent to WhatsApp ✔");
@@ -598,17 +620,72 @@ function sendOrder(){
   $(id).addEventListener("change",()=>{const f=$(id).closest(".field");if(f)f.classList.remove("bad")});
 });
 
+/* ---------- Order alerts: Firestore list + Telegram group ---------- */
+function orderText(o){
+  let t="🛒 NEW AKART ORDER #"+o.orderNo+"\n\n";
+  (o.items||[]).forEach((i,n)=>{t+=(n+1)+". "+i.name+(i.label&&!i.weight?" ("+i.label+")":"")+" — "+money(i.qty)+(i.weight?" kg":"")+" × ₹"+money(i.price)+"\n"});
+  t+="\nItems: ₹"+money(o.subtotal)+"\nDelivery ("+o.distance+"): ₹"+o.delivery+"\nTOTAL: ₹"+money(o.total)+"\n\n";
+  t+="👤 "+o.name+"\n📞 "+o.phone+"\n📍 "+o.area+"\n🏠 "+o.address;
+  return t;
+}
+function saveOrder(o){
+  const f=window.__akartDb;if(!f||!f.addDoc)return;
+  try{f.addDoc(f.collection(f.db,"orders"),o).catch(e=>console.error("Order save failed",e))}catch(e){console.error(e)}
+}
+function notifyTelegram(o){
+  if(!TELEGRAM_BOT_TOKEN||!TELEGRAM_CHAT_ID)return;
+  try{fetch("https://api.telegram.org/bot"+TELEGRAM_BOT_TOKEN+"/sendMessage",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({chat_id:TELEGRAM_CHAT_ID,text:orderText(o),disable_web_page_preview:true}),keepalive:true}).catch(e=>console.error("Telegram failed",e))}catch(e){console.error(e)}
+}
+let orders=[],ordersUnsub=null,ordersFirst=true;
+function beep(){try{const C=window.AudioContext||window.webkitAudioContext,a=new C(),o=a.createOscillator(),g=a.createGain();
+  o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.25;o.start();setTimeout(()=>{o.stop();a.close()},400);
+  if(navigator.vibrate)navigator.vibrate([200,100,200])}catch(e){}}
+function startOrders(){
+  const f=window.__akartDb;if(!f||!f.query||ordersUnsub)return;
+  const q=f.query(f.collection(f.db,"orders"),f.orderBy("createdAt","desc"),f.limit(100));
+  ordersUnsub=f.onSnapshot(q,snap=>{
+    const fresh=!ordersFirst&&snap.docChanges().some(c=>c.type==="added"&&!c.doc.metadata.hasPendingWrites);
+    orders=snap.docs.map(d=>Object.assign({_id:d.id},d.data()));
+    ordersFirst=false;renderOrders();
+    if(fresh){beep();toast("🔔 New order received!")}
+  },err=>{$("ordHint").textContent="Cannot read orders ("+(err.code||"error")+"). Check Firestore rules for the orders collection."});
+}
+function stopOrders(){if(ordersUnsub){ordersUnsub();ordersUnsub=null}ordersFirst=true;orders=[]}
+function renderOrders(){
+  const nNew=orders.filter(o=>o.status!=="done").length;
+  $("ordBadge").textContent=nNew?"("+nNew+")":"";$("adminBadge").textContent=nNew?" ("+nNew+")":"";
+  $("adminOrders").innerHTML=orders.map(o=>{const done=o.status==="done";
+    const when=new Date(o.createdAt).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+    return `<div class="ord ${done?"done":""}"><div class="ord-h"><b>#${esc(o.orderNo)}</b><span>${esc(when)}</span></div>
+      <div>${esc(o.name)} · <a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div>
+      <div>📍 ${esc(o.area)} — ${esc(o.address)}</div>
+      <ul>${(o.items||[]).map(i=>`<li>${esc(i.name)}${i.label&&!i.weight?" ("+esc(i.label)+")":""} — ${money(i.qty)}${i.weight?" kg":""} × ₹${money(i.price)}</li>`).join("")}</ul>
+      <div class="ord-t">Total ₹${money(o.total)} <small>(incl. delivery ₹${money(o.delivery)})</small></div>
+      <div class="ord-b"><a class="mini" href="tel:${esc(o.phone)}">📞 Call</a>
+      <button class="mini" data-ostatus="${esc(o._id)}" data-to="${done?"new":"done"}">${done?"Reopen":"✔ Done"}</button>
+      <button class="mini del" data-odel="${esc(o._id)}">Delete</button></div></div>`}).join("")||`<div class="hint">No orders yet.</div>`;
+}
+$("adminOrders").addEventListener("click",async e=>{
+  const f=window.__akartDb;if(!f)return;
+  const st=e.target.closest("[data-ostatus]"),dl=e.target.closest("[data-odel]");
+  try{
+    if(st)await f.updateDoc(f.doc(f.db,"orders",st.dataset.ostatus),{status:st.dataset.to});
+    if(dl&&confirm("Delete this order?"))await f.deleteDoc(f.doc(f.db,"orders",dl.dataset.odel));
+  }catch(err){toast("Could not update order")}
+});
+
 /* ---------- Admin ---------- */
 const getPw=()=>localStorage.getItem(LS_PW)||"akart123";
 function openAdmin(){$("adminModal").classList.add("show");if(adminOn)renderAdmin()}
 function closeAdmin(){$("adminModal").classList.remove("show")}
 function adminLogin(){
   if($("adminPassword").value!==getPw()){toast("Wrong password");return}
-  adminOn=true;$("adminLogin").style.display="none";$("adminPanel").style.display="block";$("adminPassword").value="";renderAdmin();
+  adminOn=true;startOrders();$("adminLogin").style.display="none";$("adminPanel").style.display="block";$("adminPassword").value="";renderAdmin();
 }
-function logoutAdmin(){adminOn=false;$("adminPanel").style.display="none";$("adminLogin").style.display="block";closeAdmin()}
+function logoutAdmin(){adminOn=false;stopOrders();$("adminPanel").style.display="none";$("adminLogin").style.display="block";closeAdmin()}
 function showAdminTab(t){
-  ["items","categories","settings"].forEach(n=>{
+  ["items","orders","categories","settings"].forEach(n=>{
     const N=n[0].toUpperCase()+n.slice(1);
     $("tab"+N).classList.toggle("active",n===t);$("tabBtn"+N).classList.toggle("active",n===t);
   });
@@ -622,9 +699,9 @@ function renderAdmin(){
   $("adminCategories").innerHTML=state.categories.map(c=>{const im=state.catImages[c],n=state.menu.filter(m=>m.cat===c).length;
     return `<div class="adm-row">${im?`<img class="thumb" src="${esc(im)}" alt="">`:`<span class="thumb" style="display:grid;place-items:center;font-size:22px">${catEmoji(c)}</span>`}
     <div class="grow"><b>${esc(c)}</b>${n} items</div>
-    <button class="mini" data-photo="${esc(c)}">📷 Photo</button>${im?`<button class="mini" data-nophoto="${esc(c)}">✕</button>`:""}
+    <button class="mini" data-photo="${esc(c)}">📷 Photo</button><button class="mini" data-url="${esc(c)}">🔗 URL</button>${im?`<button class="mini" data-nophoto="${esc(c)}">✕</button>`:""}
     <button class="mini" data-ren="${esc(c)}">Rename</button><button class="mini del" data-delcat="${esc(c)}">Delete</button></div>`}).join("")||`<div class="hint">No categories yet.</div>`;
-  $("dataCheck").textContent="Products loaded: "+state.menu.length+" · Categories: "+state.categories.length+(remoteKeys.length?" · Online fields: "+remoteKeys.join(", "):" · Online fields: none yet")+(remoteUnreadable?" · ⚠ online products NOT readable":"");
+  $("dataCheck").textContent="Products loaded: "+state.menu.length+" · Categories: "+state.categories.length+(remoteKeys.length?" · Online fields: "+remoteKeys.join(", "):" · Online fields: none yet")+(remoteUnreadable?" · ⚠ online products NOT readable":"")+" · Telegram alerts: "+(TELEGRAM_BOT_TOKEN&&TELEGRAM_CHAT_ID?"ON":"OFF");
   $("adminMobile").value=state.mobile;$("adminAreas").value=state.areas.join(", ");
 }
 $("adminItems").addEventListener("click",e=>{
@@ -638,6 +715,8 @@ $("adminItems").addEventListener("click",e=>{
 });
 $("adminCategories").addEventListener("click",e=>{
   const rn=e.target.closest("[data-ren]"),dc=e.target.closest("[data-delcat]"),ph=e.target.closest("[data-photo]"),np=e.target.closest("[data-nophoto]");
+  const ul=e.target.closest("[data-url]");
+  if(ul){const u=(prompt("Paste photo link (https://...)","")||"").trim();if(u){state.catImages[ul.dataset.url]=u;saveAll()}return}
   if(ph){catPhotoTarget=ph.dataset.photo;$("catPhotoFile").click();return}
   if(np){delete state.catImages[np.dataset.nophoto];saveAll();return}
   if(rn){const old=rn.dataset.ren,nn=(prompt("New name for category",old)||"").trim();
@@ -692,8 +771,9 @@ async function uploadImage(file,max){
   try{
     const f=window.__akartDb;if(!f)throw new Error("offline");
     const r=f.ref(f.storage,"akart/"+Date.now()+"_"+file.name.replace(/[^\w.]/g,"_"));
-    await f.uploadBytes(r,file);return await f.getDownloadURL(r);
-  }catch(e){return await compress(file,max||600)}
+    await Promise.race([f.uploadBytes(r,file),new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),8000))]);
+    return await f.getDownloadURL(r);
+  }catch(e){console.warn("Storage upload failed, using inline photo",e);return await compress(file,max||600)}
 }
 async function handleImageUpload(ev){
   const file=ev.target.files[0];if(!file)return;
@@ -702,11 +782,11 @@ async function handleImageUpload(ev){
   catch(e){st.textContent="Upload failed — paste a photo URL instead"}
 }
 async function handleCatPhoto(ev){
-  const file=ev.target.files[0];ev.target.value="";
+  const input=ev.target,file=input.files&&input.files[0];
   if(!file||!catPhotoTarget)return;
   toast("Uploading photo…");
-  try{state.catImages[catPhotoTarget]=await uploadImage(file,500);await saveAll()}
-  catch(e){toast("Photo upload failed")}
+  try{const url=await uploadImage(file,400);state.catImages[catPhotoTarget]=url;input.value="";await saveAll()}
+  catch(e){input.value="";console.error(e);toast("Photo failed — try a JPG/PNG photo or use 🔗 URL")}
 }
 function compress(file,max){return new Promise((res,rej)=>{
   const fr=new FileReader();fr.onerror=rej;
