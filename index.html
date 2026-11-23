@@ -232,6 +232,7 @@ body{overflow-x:hidden}
       <input id="lgEmail" type="email" placeholder="Admin email" autocomplete="username" style="display:none"><select id="lgWho"></select>
       <input id="lgPass" type="password" placeholder="Password">
       <button class="primary" onclick="doLogin()">Login</button>
+      <div id="lgErr" class="err" style="display:block;font-size:13px;word-break:break-word"></div>
     </div>
   </div>
 
@@ -528,17 +529,16 @@ function orderText(o){
 
 /* ============ ADMIN: LOGIN / ROLES ============ */
 const isOwner=()=>role&&role.type==="owner";
-function openAdmin(){$("admModal").classList.add("show");fillLoginSelect();showAdminState()}
+function openAdmin(){$("admModal").classList.add("show");fillLoginSelect();$("lgWho").style.display=db?"none":"";$("lgEmail").style.display=db?"":"none";showAdminState()}
 function closeAdmin(){$("admModal").classList.remove("show")}
 function fillLoginSelect(){$("lgWho").innerHTML=`<option value="__owner">Owner (all areas)</option>`+S.settings.areas.map(a=>`<option value="${esc(a)}">${esc(a)} area</option>`).join("")}
 function doLogin(){
-  if(db){const who=$("lgWho").value,pw=$("lgPass").value;if(!pw){toast("Enter password");return}
-    const em=(who==="__owner"?"owner":who.toLowerCase().replace(/[^a-z0-9]/g,""))+"@akart.app";
+  if(db){$("lgErr").textContent="";const em=$("lgEmail").value.trim(),pw=$("lgPass").value;if(!em||!pw){toast("Enter email and password");return}
     auth.signInWithEmailAndPassword(em,pw).then(c=>db.collection("staff").doc(c.user.uid).get()).then(d=>{
       if(!d.exists){auth.signOut();throw new Error("This account has no staff role")}
       const v=d.data();role=v.type==="owner"?{type:"owner"}:{type:"area",area:v.area};
       sessionStorage.setItem("akart_role",JSON.stringify(role));$("lgPass").value="";lastNew=-1;listenOrders();showAdminState()
-    }).catch(e=>toast("Login failed: "+(/invalid|wrong|user-not-found/.test(e.code||"")?"wrong password (or account not created yet)":e.message)));return}
+    }).catch(e=>{$("lgErr").textContent="Login error: "+(e.code||"")+" "+(e.message||"");toast("Login failed — see message below")});return}
   const who=$("lgWho").value,p=$("lgPass").value;
   if(who==="__owner"){if(p!==S.settings.adminPass){toast("Wrong password");return}role={type:"owner"}}
   else{const ap=S.settings.areaPass[who];if(!ap||p!==ap){toast(ap?"Wrong password":"No password set for this area yet");return}role={type:"area",area:who}}
