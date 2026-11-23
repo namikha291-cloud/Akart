@@ -534,8 +534,8 @@ function closeAdmin(){$("admModal").classList.remove("show")}
 function fillLoginSelect(){$("lgWho").innerHTML=`<option value="__owner">Owner (all areas)</option>`+S.settings.areas.map(a=>`<option value="${esc(a)}">${esc(a)} area</option>`).join("")}
 function doLogin(){
   if(db){$("lgErr").textContent="";const em=$("lgEmail").value.trim(),pw=$("lgPass").value;if(!em||!pw){toast("Enter email and password");return}
-    auth.signInWithEmailAndPassword(em,pw).then(c=>db.collection("staff").doc(c.user.uid).get()).then(d=>{
-      if(!d.exists){auth.signOut();throw new Error("This account has no staff role")}
+    auth.signInWithEmailAndPassword(em,pw).then(c=>{window._uid=c.user.uid;return db.collection("staff").doc(c.user.uid).get()}).then(d=>{
+      if(!d.exists){auth.signOut();throw new Error("Password OK, but no staff document found. Create Firestore staff/"+window._uid+" with field type = owner")}
       const v=d.data();role=v.type==="owner"?{type:"owner"}:{type:"area",area:v.area};
       sessionStorage.setItem("akart_role",JSON.stringify(role));$("lgPass").value="";lastNew=-1;listenOrders();showAdminState()
     }).catch(e=>{$("lgErr").textContent="Login error: "+(e.code||"")+" "+(e.message||"");toast("Login failed — see message below")});return}
