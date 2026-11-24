@@ -171,7 +171,7 @@ body{overflow-x:hidden}
 <header>
   <div class="hin">
     <div class="brand">
-      <div class="logo">A<b>KART</b><small class="tg">আপোনাৰ বজাৰ আপোনাৰ দোৱাৰলৈ ।</small></div>
+      <div class="logo">A<b>KART</b><small class="tg">আপোনাৰ বজাৰ আপোনাৰ দুৱাৰলৈ ।</small></div>
       <div class="hact"><span id="syncDot" class="sync local"></span>
         <button class="hbtn" onclick="openAdmin()" aria-label="Admin">⚙<span id="admBadge" class="cnt" style="display:none"></span></button>
         <button class="hbtn" onclick="openCart()" aria-label="Open cart">🛒<span class="cnt" id="hCnt">0</span></button>
@@ -269,6 +269,7 @@ body{overflow-x:hidden}
         <input id="iName" placeholder="Item name">
         <input id="iPrice" type="number" min="0" step="0.01" placeholder="Price ₹ (per unit / per kg / full plate)">
         <input id="iMrp" type="number" min="0" step="0.01" placeholder="🔥 Special offer: ORIGINAL price ₹ (leave empty if no offer)">
+        <label style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600"><input type="checkbox" id="iHot" style="width:22px;height:22px"> ⭐ Most demanded item (show on home page)</label>
         <input id="iUnit" placeholder="Unit e.g. per kg / per piece / per plate">
         <select id="iCat"></select>
         <select id="iType" onchange="togglePortion()">
@@ -445,7 +446,10 @@ function goHome(){pickCat("all")}
 function onSearch(v){query=v.trim().toLowerCase();renderSide();renderContent()}
 const isOffer=i=>i.mrp>i.price&&!i.out;
 const offers=()=>S.items.filter(isOffer);
-function offSec(){const r=offers();return r.length?`<section class="sec offers"><div class="st"><h2>🔥 Special Offers <small style="color:var(--muted);font-weight:600;font-size:12px">(${r.length})</small></h2></div><div class="grid">${r.map(card).join("")}</div></section>`:""}
+const hots=()=>S.items.filter(i=>i.hot&&!i.out);
+function secBox(cls,title,r,emptyTxt,hint){return `<section class="sec ${cls}"><div class="st"><h2>${title} <small style="color:var(--muted);font-weight:600;font-size:12px">${r.length?"("+r.length+")":""}</small></h2></div>${r.length?`<div class="grid">${r.map(card).join("")}</div>`:`<div class="empty" style="padding:16px">${emptyTxt}${role&&role.type==="owner"?`<br><small>Admin: ${hint}</small>`:""}</div>`}</section>`}
+function offSec(){return secBox("offers","🔥 Special Offers",offers(),"New offers coming soon. Check back!","open ⚙ Items → Edit a product and fill “Original price” higher than Price.")}
+function hotSec(){return secBox("hots","⭐ Most Demanded",hots(),"Our most popular items will appear here.","open ⚙ Items → Edit a product and tick “Most demanded item”.")}
 function priceTxt(i){return `₹${money(i.price)} ${isOffer(i)?`<s class="mrp">₹${money(i.mrp)}</s> `:""}<small>${esc(i.unit||"")}</small>`}
 function card(i){
   const k=i.id+"|full",line=cart[k];
@@ -470,8 +474,8 @@ function renderContent(){
   }
   const secs=S.cats.map(c=>{const r=S.items.filter(i=>i.cat===c.id);if(!r.length)return"";
     return `<section class="sec"><div class="st"><h2>${esc(c.name)} <small style="color:var(--muted);font-weight:600;font-size:12px">(${r.length})</small></h2></div><div class="grid">${r.map(card).join("")}</div></section>`}).join("");
-  el.innerHTML=`<div class="hero"><div class="tagline">আপোনাৰ বজাৰ আপোনাৰ দোৱাৰলৈ ।</div><h1>Groceries and hot food, at your door in Tengakhat</h1><p>Order here and send it on WhatsApp in one tap.</p><div class="acts"><a href="tel:+91${(S.settings.mobile||"").replace(/\D/g,"").slice(-10)}">Call to order</a><button class="ghost" style="background:#ffffff1f;color:#fff" onclick="openCart()">Open cart</button></div></div>
-  <div class="perks"><div class="perk"><span>⚡</span>Fast delivery</div><div class="perk"><span>🥬</span>Fresh daily</div><div class="perk"><span>💵</span>₹20 within 2 km</div></div>`+offSec()+(secs||`<div class="empty">The shop is being stocked. Please check back soon.</div>`);
+  el.innerHTML=`<div class="hero"><div class="tagline">আপোনাৰ বজাৰ আপোনাৰ দুৱাৰলৈ ।</div><h1>Groceries and hot food, at your door in Tengakhat</h1><p>Order here and send it on WhatsApp in one tap.</p><div class="acts"><a href="tel:+91${(S.settings.mobile||"").replace(/\D/g,"").slice(-10)}">Call to order</a><button class="ghost" style="background:#ffffff1f;color:#fff" onclick="openCart()">Open cart</button></div></div>
+  <div class="perks"><div class="perk"><span>⚡</span>Fast delivery</div><div class="perk"><span>🥬</span>Fresh daily</div><div class="perk"><span>💵</span>₹20 within 2 km</div></div>`+offSec()+hotSec()+(secs||`<div class="empty">The shop is being stocked. Please check back soon.</div>`);
 }
 
 /* ============ CART ============ */
@@ -629,19 +633,24 @@ function entrySave(){
 function fillCatSelect(){$("iCat").innerHTML=S.cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}
 function togglePortion(){$("iHalf").style.display=$("iType").value==="plate"?"block":"none"}
 function compress(file,max,cb){
-  const r=new FileReader();r.onload=e=>{const im=new Image();im.onload=()=>{const s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*s;c.height=im.height*s;c.getContext("2d").drawImage(im,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.72))};im.src=e.target.result};r.readAsDataURL(file)}
-function itemPhoto(e){const f=e.target.files[0];if(!f)return;compress(f,520,d=>{$("iImg").value=d;$("iPrev").src=d;$("iPrev").style.display="block";$("iStat").textContent="Photo ready"})}
-function newItem(){["iId","iName","iPrice","iMrp","iUnit","iHalf","iImg","iDesc"].forEach(i=>$(i).value="");$("iType").value="unit";$("iPrev").style.display="none";$("iStat").textContent="No photo selected";togglePortion()}
+  const r=new FileReader();r.onerror=()=>toast("Could not read this file");
+  r.onload=e=>{const im=new Image();im.onerror=()=>toast("This image cannot be used. Try another photo.");
+    im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+      const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+      let q=.8,d=c.toDataURL("image/jpeg",q);while(d.length>90000&&q>.35){q-=.1;d=c.toDataURL("image/jpeg",q)}cb(d)};
+    im.src=e.target.result};r.readAsDataURL(file)}
+function itemPhoto(e){const f=e.target.files[0];if(!f)return;compress(f,520,d=>{$("iImg").value=d;$("iPrev").src=d;$("iPrev").style.display="block";$("iStat").textContent="Photo compressed ✓ ("+Math.round(d.length/1365)+" KB)"})}
+function newItem(){["iId","iName","iPrice","iMrp","iUnit","iHalf","iImg","iDesc"].forEach(i=>$(i).value="");$("iHot").checked=false;$("iType").value="unit";$("iPrev").style.display="none";$("iStat").textContent="No photo selected";togglePortion()}
 function saveItem(){
   const name=$("iName").value.trim(),price=parseFloat($("iPrice").value);
   if(!name||!(price>=0)||!$("iCat").value){toast("Name, price and category are required");return}
   const id=$("iId").value||uid("i"),old=S.items.find(i=>i.id===id);
-  const it={id,name,price,unit:$("iUnit").value.trim(),cat:$("iCat").value,type:$("iType").value,mrp:(parseFloat($("iMrp").value)>price?parseFloat($("iMrp").value):0),half:parseFloat($("iHalf").value)||0,img:$("iImg").value.trim(),desc:$("iDesc").value.trim(),out:old?old.out:false};
+  const it={id,name,price,unit:$("iUnit").value.trim(),cat:$("iCat").value,type:$("iType").value,hot:$("iHot").checked,mrp:(parseFloat($("iMrp").value)>price?parseFloat($("iMrp").value):0),half:parseFloat($("iHalf").value)||0,img:$("iImg").value.trim(),desc:$("iDesc").value.trim(),out:old?old.out:false};
   if(old)Object.assign(old,it);else S.items.push(it);
   saveStore();newItem();renderAdminItems();renderAll();toast("Item saved");
 }
 function editItem(id){
-  const i=S.items.find(x=>x.id===id);$("iId").value=i.id;$("iName").value=i.name;$("iPrice").value=i.price;$("iMrp").value=i.mrp||"";$("iUnit").value=i.unit||"";$("iCat").value=i.cat;$("iType").value=i.type||"unit";$("iHalf").value=i.half||"";$("iImg").value=i.img||"";$("iDesc").value=i.desc||"";
+  const i=S.items.find(x=>x.id===id);$("iId").value=i.id;$("iName").value=i.name;$("iPrice").value=i.price;$("iMrp").value=i.mrp||"";$("iHot").checked=!!i.hot;$("iUnit").value=i.unit||"";$("iCat").value=i.cat;$("iType").value=i.type||"unit";$("iHalf").value=i.half||"";$("iImg").value=i.img||"";$("iDesc").value=i.desc||"";
   if(i.img){$("iPrev").src=i.img;$("iPrev").style.display="block"}else $("iPrev").style.display="none";
   togglePortion();$("admModal").querySelector(".panel").scrollTo({top:0,behavior:"smooth"});
 }
